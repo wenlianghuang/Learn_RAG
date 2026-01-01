@@ -1,0 +1,19 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Data and cache directories
+chroma_db/
+*.db
+*.sqlite3
+
+# Hugging Face cache (optional, uncomment if you want to ignore)
+# .cache/
+# huggingface_cache/
