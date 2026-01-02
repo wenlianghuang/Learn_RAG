@@ -7,7 +7,11 @@ from .retrievers import (
     BM25Retriever,
     VectorRetriever,
     HybridSearch,
+    Reranker,
+    RAGPipeline,
 )
+from .prompt_formatter import PromptFormatter
+from .llm_integration import OllamaLLM
 
 __all__ = [
     "DocumentProcessor",
@@ -15,5 +19,9 @@ __all__ = [
     "BM25Retriever",
     "VectorRetriever",
     "HybridSearch",
+    "Reranker",
+    "RAGPipeline",
+    "PromptFormatter",
+    "OllamaLLM",
 ]
 

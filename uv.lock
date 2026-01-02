@@ -1049,6 +1049,7 @@ dependencies = [
     { name = "langchain-text-splitters" },
     { name = "pandas" },
     { name = "rank-bm25" },
+    { name = "requests" },
     { name = "sentence-transformers" },
     { name = "torch" },
 ]
@@ -1064,6 +1065,7 @@ requires-dist = [
     { name = "langchain-text-splitters", specifier = ">=0.0.1" },
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "rank-bm25", specifier = ">=0.2.2" },
+    { name = "requests", specifier = ">=2.31.0" },
     { name = "sentence-transformers", specifier = ">=2.2.2" },
     { name = "torch", specifier = ">=2.0.0" },
 ]
