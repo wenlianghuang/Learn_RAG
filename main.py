@@ -20,7 +20,11 @@ def main():
     
     # 2. 獲取 arXiv 論文
     print("\n[2/5] 從 arXiv 獲取論文...")
-    papers = processor.fetch_papers(query="cat:cs.AI", max_results=5)
+    print("  搜尋 AI、機器學習和自然語言處理相關論文...")
+    papers = processor.fetch_papers(
+        query="cat:cs.AI OR cat:cs.LG OR cat:cs.CL",  # AI + 機器學習 + 自然語言處理
+        max_results=40  # 增加到 40 篇以獲得更多樣化的結果
+    )
     print(f"獲取了 {len(papers)} 篇論文")
     
     # 3. 處理文檔（分割成 chunks）
@@ -37,36 +41,35 @@ def main():
     # 4. 初始化檢索器
     print("\n[4/5] 初始化檢索器...")
     
-    # BM25 檢索器
-    print("  - 初始化 BM25 檢索器...")
+    # 稀疏檢索器 (BM25)
+    print("  - 初始化稀疏檢索器 (BM25)...")
     bm25_retriever = BM25Retriever(documents)
     
-    # 向量檢索器（使用免費的 Hugging Face 模型）
-    print("  - 初始化向量檢索器（使用免費的 Hugging Face 模型）...")
-    print("    首次使用時會下載模型，請稍候...")
+    # 密集檢索器 (向量)
+    print("  - 初始化密集檢索器（使用免費的 Hugging Face 模型）...")
     
     # 設置 Hugging Face 模型緩存目錄（可選：外接硬碟路徑）
-    # 例如："/Volumes/ExternalDrive/huggingface_cache" (macOS)
-    # 或："/mnt/external_drive/huggingface_cache" (Linux)
-    # 如果為 None，則使用默認位置 ~/.cache/huggingface/
-    hf_cache_dir = os.getenv("HF_CACHE_DIR", None)  # 可以通過環境變數設置
-    # 或者直接在這裡指定路徑，例如：
-    # hf_cache_dir = "/Volumes/YourExternalDrive/huggingface_cache"
+    hf_cache_dir = os.getenv("HF_CACHE_DIR", None)
     
     vector_retriever = VectorRetriever(
         documents,
-        embedding_model="sentence-transformers/all-MiniLM-L6-v2",  # Hugging Face 模型
+        embedding_model="sentence-transformers/all-MiniLM-L6-v2",
         persist_directory="./chroma_db",
-        hf_cache_dir=hf_cache_dir  # 指定模型緩存目錄（外接硬碟路徑）
+        hf_cache_dir=hf_cache_dir
     )
     
     # 5. 初始化 Hybrid Search
     print("\n[5/5] 初始化 Hybrid Search...")
+    print("  使用 RRF (Reciprocal Rank Fusion) 方法（預設）")
+    print("  RRF 不需要分數正規化，對不同分數分佈更魯棒")
     hybrid_search = HybridSearch(
-        bm25_retriever=bm25_retriever,
-        vector_retriever=vector_retriever,
-        bm25_weight=0.4,  # BM25 權重 40%
-        vector_weight=0.6  # 向量檢索權重 60%
+        sparse_retriever=bm25_retriever,
+        dense_retriever=vector_retriever,
+        fusion_method="rrf",  # 使用 RRF 方法（預設）
+        rrf_k=60,  # RRF 常數 k，通常設為 60
+        # 如果使用 weighted_sum 方法，可以設置權重：
+        # sparse_weight=0.4,
+        # dense_weight=0.6,
     )
     
     print("\n" + "=" * 60)
@@ -88,7 +91,7 @@ def main():
         print("-" * 60)
         
         # 使用 Hybrid Search
-        results = hybrid_search.search(query, top_k=3)
+        results = hybrid_search.retrieve(query, top_k=3)
         
         print(f"\n找到 {len(results)} 個相關結果：\n")
         
@@ -97,8 +100,20 @@ def main():
             print(f"  標題: {result['metadata']['title']}")
             print(f"  arXiv ID: {result['metadata']['arxiv_id']}")
             print(f"  混合分數: {result['hybrid_score']:.4f}")
-            print(f"    - BM25 分數: {result['bm25_score']:.4f}")
-            print(f"    - 向量分數: {result['vector_score']:.4f}")
+            
+            # 根據融合方法顯示不同的資訊
+            if 'rrf_score' in result:
+                # RRF 方法
+                print(f"    - RRF 分數: {result['rrf_score']:.4f}")
+                if result.get('sparse_rank') is not None:
+                    print(f"    - BM25 排名: {result['sparse_rank']} (分數: {result.get('sparse_score', 0.0):.4f})")
+                if result.get('dense_rank') is not None:
+                    print(f"    - 向量排名: {result['dense_rank']} (分數: {result.get('dense_score', 0.0):.4f})")
+            else:
+                # Weighted Sum 方法
+                print(f"    - 稀疏(BM25)分數: {result.get('sparse_score', 0.0):.4f}")
+                print(f"    - 密集(向量)分數: {result.get('dense_score', 0.0):.4f}")
+            
             print(f"  內容預覽: {result['content'][:150]}...")
             print()
     
@@ -112,27 +127,120 @@ def main():
     print("-" * 60)
     
     # BM25 結果
-    print("\n[BM25 檢索結果]")
+    print("\n[BM25 檢索結果] (分數越高越好)")
     bm25_results = bm25_retriever.retrieve(comparison_query, top_k=3)
     for i, result in enumerate(bm25_results, 1):
         print(f"{i}. {result['metadata']['title']} (分數: {result['score']:.4f})")
     
     # 向量檢索結果
-    print("\n[向量檢索結果]")
-    print("注意: 向量檢索的分數是距離分數（越小越相似）")
+    print("\n[向量檢索結果] (分數越高越好)")
     vector_results = vector_retriever.retrieve(comparison_query, top_k=3)
     for i, result in enumerate(vector_results, 1):
         score = result.get('score')
         if score is not None:
-            print(f"{i}. {result['metadata']['title']} (距離分數: {score:.4f})")
+            print(f"{i}. {result['metadata']['title']} (相似度分數: {score:.4f})")
         else:
             print(f"{i}. {result['metadata']['title']} (分數: N/A)")
     
-    # Hybrid Search 結果
-    print("\n[Hybrid Search 結果]")
-    hybrid_results = hybrid_search.search(comparison_query, top_k=3)
+    # Hybrid Search 結果（使用 RRF）
+    print("\n[Hybrid Search 結果 (RRF)] (分數越高越好)")
+    hybrid_results = hybrid_search.retrieve(comparison_query, top_k=3)
     for i, result in enumerate(hybrid_results, 1):
-        print(f"{i}. {result['metadata']['title']} (混合分數: {result['hybrid_score']:.4f})")
+        if 'rrf_score' in result:
+            print(f"{i}. {result['metadata']['title']} (RRF 分數: {result['rrf_score']:.4f})")
+        else:
+            print(f"{i}. {result['metadata']['title']} (混合分數: {result['hybrid_score']:.4f})")
+    
+    # 比較 RRF 和 Weighted Sum 方法
+    print("\n" + "=" * 60)
+    print("比較 RRF 和 Weighted Sum 融合方法")
+    print("=" * 60)
+    
+    comparison_query2 = "transformer architecture"
+    print(f"\n查詢: '{comparison_query2}'")
+    print("-" * 60)
+    
+    # RRF 方法
+    print("\n[RRF 方法結果]")
+    hybrid_search_rrf = HybridSearch(
+        sparse_retriever=bm25_retriever,
+        dense_retriever=vector_retriever,
+        fusion_method="rrf",
+        rrf_k=60
+    )
+    rrf_results = hybrid_search_rrf.retrieve(comparison_query2, top_k=3)
+    for i, result in enumerate(rrf_results, 1):
+        print(f"{i}. {result['metadata']['title']}")
+        print(f"   RRF 分數: {result['rrf_score']:.4f}")
+        if result.get('sparse_rank'):
+            print(f"   BM25 排名: {result['sparse_rank']}, 分數: {result.get('sparse_score', 0.0):.4f}")
+        if result.get('dense_rank'):
+            print(f"   向量排名: {result['dense_rank']}, 分數: {result.get('dense_score', 0.0):.4f}")
+    
+    # Weighted Sum 方法
+    print("\n[Weighted Sum 方法結果]")
+    hybrid_search_weighted = HybridSearch(
+        sparse_retriever=bm25_retriever,
+        dense_retriever=vector_retriever,
+        fusion_method="weighted_sum",
+        sparse_weight=0.4,
+        dense_weight=0.6
+    )
+    weighted_results = hybrid_search_weighted.retrieve(comparison_query2, top_k=3)
+    for i, result in enumerate(weighted_results, 1):
+        print(f"{i}. {result['metadata']['title']}")
+        print(f"   混合分數: {result['hybrid_score']:.4f}")
+        print(f"   BM25 分數: {result.get('sparse_score', 0.0):.4f}")
+        print(f"   向量分數: {result.get('dense_score', 0.0):.4f}")
+    
+    # 8. 示範 Metadata Filtering 功能
+    print("\n" + "=" * 60)
+    print("Metadata Filtering 功能示範")
+    print("=" * 60)
+    
+    if documents:
+        # 獲取第一個論文的 arxiv_id 作為範例
+        first_paper_id = documents[0]['metadata'].get('arxiv_id', None)
+        first_paper_title = documents[0]['metadata'].get('title', '')
+        
+        if first_paper_id:
+            print(f"\n示範：只檢索特定論文 (arXiv ID: {first_paper_id})")
+            print("-" * 60)
+            
+            # 使用 metadata_filter 只檢索特定論文的 chunks
+            filtered_results = hybrid_search.retrieve(
+                query="machine learning",
+                top_k=5,
+                metadata_filter={"arxiv_id": first_paper_id}
+            )
+            
+            print(f"\n找到 {len(filtered_results)} 個來自該論文的結果：\n")
+            for i, result in enumerate(filtered_results, 1):
+                print(f"結果 {i}:")
+                print(f"  標題: {result['metadata']['title']}")
+                print(f"  arXiv ID: {result['metadata']['arxiv_id']}")
+                print(f"  Chunk 索引: {result['metadata'].get('chunk_index', 'N/A')}")
+                print(f"  混合分數: {result['hybrid_score']:.4f}")
+                print(f"  內容預覽: {result['content'][:150]}...")
+                print()
+        
+        # 示範按標題過濾（部分匹配）
+        if first_paper_title:
+            print(f"\n示範：按標題關鍵字過濾（包含 '{first_paper_title[:30]}...'）")
+            print("-" * 60)
+            
+            # 提取標題的前幾個字作為過濾條件
+            title_keyword = first_paper_title.split()[0] if first_paper_title else ""
+            if title_keyword:
+                filtered_by_title = hybrid_search.retrieve(
+                    query="machine learning",
+                    top_k=3,
+                    metadata_filter={"title": title_keyword}
+                )
+                
+                print(f"\n找到 {len(filtered_by_title)} 個匹配標題的結果：\n")
+                for i, result in enumerate(filtered_by_title, 1):
+                    print(f"{i}. {result['metadata']['title']} (混合分數: {result['hybrid_score']:.4f})")
     
     print("\n" + "=" * 60)
     print("完成！")

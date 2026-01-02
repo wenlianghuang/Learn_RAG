@@ -5,6 +5,7 @@ from typing import List, Dict, Optional
 from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
 import os
+from .base import BaseRetriever
 
 # 嘗試導入 HuggingFaceEmbeddings（免費模型）
 try:
@@ -42,7 +43,7 @@ def get_device() -> str:
         return 'cpu'
 
 
-class VectorRetriever:
+class VectorRetriever(BaseRetriever):
     """使用向量檢索進行語義搜尋"""
     
     def __init__(
@@ -138,55 +139,96 @@ class VectorRetriever:
         # 創建 retriever
         self.retriever = self.vectorstore.as_retriever()
     
-    def retrieve(self, query: str, top_k: int = 5) -> List[Dict]:
+    def retrieve(
+        self, 
+        query: str, 
+        top_k: int = 5, 
+        metadata_filter: Optional[Dict] = None
+    ) -> List[Dict]:
         """
-        檢索相關文檔
+        檢索相關文檔，並返回標準化的相似度分數（越高越好）。
+        支援根據 metadata 進行過濾。
         
         Args:
             query: 查詢文字
             top_k: 返回前 k 個結果
+            metadata_filter: 可選的 metadata 過濾條件字典。
+                            例如: {"arxiv_id": "1234.5678"} 只檢索特定論文的 chunks
+                            或 {"title": "Machine Learning"} 只檢索特定標題的論文
+                            支援多個條件，所有條件必須同時滿足（AND 邏輯）
+                            注意：ChromaDB 的 where 條件支援精確匹配，不支援部分匹配
             
         Returns:
-            相關文檔列表，每個包含 "content", "metadata", "score"
+            相關文檔列表，每個包含 "content", "metadata", 和 "score"
+            結果會根據 metadata_filter 進行過濾
         """
-        # 使用 similarity_search_with_score 來獲得分數
-        # 注意：這裡的分數是距離分數（越小越相似），與 BM25 的分數（越大越相關）不同
-        results_with_scores = self.vectorstore.similarity_search_with_score(query, k=top_k)
+        # 構建過濾條件
+        # 如果提供了 metadata_filter，先獲取更多結果，然後在 Python 中進行過濾
+        # 這是因為 LangChain ChromaDB 的 similarity_search_with_score 方法
+        # 對 filter 參數的支援可能因版本而異
+        if metadata_filter:
+            # 獲取更多結果以確保有足夠的候選進行過濾
+            results_with_scores = self.vectorstore.similarity_search_with_score(
+                query, 
+                k=top_k * 10  # 獲取更多結果
+            )
+            
+            # 在 Python 中進行過濾
+            filtered_results = []
+            for doc, distance_score in results_with_scores:
+                metadata = doc.metadata
+                matches = True
+                
+                for key, value in metadata_filter.items():
+                    doc_value = metadata.get(key)
+                    
+                    # 檢查是否匹配
+                    if isinstance(value, dict):
+                        # 支援運算符格式（例如 {"$eq": "value"}）
+                        if "$eq" in value:
+                            if doc_value != value["$eq"]:
+                                matches = False
+                                break
+                        else:
+                            # 其他運算符可以在此擴展
+                            matches = False
+                            break
+                    elif isinstance(value, str) and isinstance(doc_value, str):
+                        # 字串匹配：支援部分匹配（包含）
+                        if value.lower() not in doc_value.lower():
+                            matches = False
+                            break
+                    else:
+                        # 其他類型使用精確匹配
+                        if doc_value != value:
+                            matches = False
+                            break
+                
+                if matches:
+                    filtered_results.append((doc, distance_score))
+            
+            # 只保留前 top_k 個結果
+            results_with_scores = filtered_results[:top_k]
+        else:
+            # 沒有過濾條件，直接獲取結果
+            results_with_scores = self.vectorstore.similarity_search_with_score(
+                query, 
+                k=top_k
+            )
         
-        # 構建結果
+        # 構建結果並轉換分數
         results = []
-        for doc, score in results_with_scores:
+        for doc, distance_score in results_with_scores:
+            # 因為 embedding 已正規化，L2 距離的平方為 2 - 2 * cos_sim
+            # -> cos_sim = 1 - (distance^2 / 2)
+            # 分數範圍在 [0, 1] 之間，越高越相似
+            similarity_score = 1 - (distance_score**2 / 2)
+            
             results.append({
                 "content": doc.page_content,
                 "metadata": doc.metadata,
-                "score": float(score),  # 轉換為 float，這是距離分數（越小越相似）
+                "score": float(similarity_score),
             })
         
         return results
-    
-    def similarity_search_with_score(self, query: str, top_k: int = 5) -> List[tuple]:
-        """
-        檢索相關文檔並返回相似度分數
-        
-        Args:
-            query: 查詢文字
-            top_k: 返回前 k 個結果
-            
-        Returns:
-            (文檔, 分數) 元組列表
-        """
-        # 使用 similarity_search_with_score 獲取分數
-        results = self.vectorstore.similarity_search_with_score(query, k=top_k)
-        
-        formatted_results = []
-        for doc, score in results:
-            formatted_results.append((
-                {
-                    "content": doc.page_content,
-                    "metadata": doc.metadata,
-                },
-                float(score)
-            ))
-        
-        return formatted_results
 
