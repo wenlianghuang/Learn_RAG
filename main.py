@@ -360,6 +360,159 @@ def comprehensive_rag_test(
             continue
 
 
+def test_rag_vs_no_rag(
+    llm: OllamaLLM,
+    rag_pipeline: RAGPipeline,
+    formatter: PromptFormatter,
+    query: str,
+    test_file_path: Optional[str] = None
+):
+    """
+    對比測試：有 RAG vs 無 RAG
+    
+    這個測試可以驗證 RAG 系統的效果：
+    - 無 RAG：LLM 只能基於訓練數據回答（可能無法回答私有文檔的問題）
+    - 有 RAG：LLM 可以基於檢索到的私有文檔回答（應該能正確回答）
+    
+    Args:
+        llm: LLM 實例
+        rag_pipeline: RAG 管線
+        formatter: Prompt 格式化器
+        query: 測試問題（應該涉及私有文檔的內容）
+        test_file_path: 測試文件路徑（可選，用於顯示文件信息）
+    """
+    print("\n" + "="*60)
+    print("RAG 效果對比測試")
+    print("="*60)
+    print(f"\n測試問題: '{query}'")
+    if test_file_path:
+        print(f"測試文件: {test_file_path}")
+    print("-"*60)
+    
+    # 檢測查詢語言
+    detected_lang = PromptFormatter.detect_language(query)
+    is_chinese = detected_lang == "zh"
+    
+    # 1. 無 RAG：直接問 LLM
+    print("\n[測試 1] 無 RAG - 直接問 LLM（不提供任何上下文）")
+    print("-"*60)
+    try:
+        if is_chinese:
+            no_rag_prompt = f"""請回答以下問題：
+
+{query}
+
+請注意：你只能基於你的訓練數據來回答，無法訪問任何外部文檔。
+請使用中文回答。"""
+        else:
+            no_rag_prompt = f"""Please answer the following question:
+
+{query}
+
+Note: You can only answer based on your training data and cannot access any external documents.
+Please answer in English."""
+        
+        print("生成回答中...")
+        no_rag_answer = llm.generate(
+            prompt=no_rag_prompt,
+            temperature=0.7,
+            max_tokens=2048
+        )
+        print("\nLLM 回答（無 RAG）：")
+        print("-" * 40)
+        print(no_rag_answer)
+        print("-" * 40)
+        print("\n✅ 無 RAG 回答完成")
+    except Exception as e:
+        print(f"❌ 無 RAG 測試失敗: {e}")
+        no_rag_answer = None
+    
+    # 2. 有 RAG：使用檢索增強
+    print("\n" + "-"*60)
+    print("[測試 2] 有 RAG - 使用檢索增強（提供相關文檔片段）")
+    print("-"*60)
+    
+    try:
+        # 檢索相關文檔
+        print("檢索相關文檔中...")
+        rag_results = rag_pipeline.query(
+            text=query,
+            top_k=3,
+            enable_rerank=True
+        )
+        
+        if not rag_results:
+            print("⚠️  未找到相關文檔")
+            print("這可能意味著：")
+            print("  1. 查詢與文檔內容不匹配")
+            print("  2. 文檔尚未載入到檢索系統")
+            return
+        
+        print(f"✅ 找到 {len(rag_results)} 個相關片段")
+        
+        # 格式化並生成回答
+        formatted_context = formatter.format_context(rag_results, format_style="detailed")
+        rag_prompt = formatter.create_prompt(query, formatted_context)
+        
+        print("\n生成回答中...")
+        rag_answer = llm.generate(
+            prompt=rag_prompt,
+            temperature=0.7,
+            max_tokens=2048
+        )
+        
+        print("\nLLM 回答（有 RAG）：")
+        print("-" * 40)
+        print(rag_answer)
+        print("-" * 40)
+        
+        # 顯示檢索到的文檔片段
+        print("\n" + "-"*60)
+        print("檢索到的文檔片段（LLM 的參考來源）：")
+        print("-"*60)
+        for i, result in enumerate(rag_results, 1):
+            print(f"\n片段 {i}:")
+            metadata = result['metadata']
+            print(f"  來源: {metadata.get('title', 'N/A')}")
+            if 'file_path' in metadata:
+                print(f"  文件: {metadata['file_path']}")
+            elif 'arxiv_id' in metadata:
+                print(f"  arXiv ID: {metadata['arxiv_id']}")
+            print(f"  相關性分數: {result.get('rerank_score', result.get('hybrid_score', 0)):.4f}")
+            print(f"  內容預覽: {result['content'][:200]}...")
+        
+        print("\n✅ 有 RAG 回答完成")
+        
+    except Exception as e:
+        print(f"❌ 有 RAG 測試失敗: {e}")
+        import traceback
+        traceback.print_exc()
+        rag_answer = None
+    
+    # 3. 對比總結
+    print("\n" + "="*60)
+    print("對比總結")
+    print("="*60)
+    
+    if no_rag_answer and rag_answer:
+        print("\n✅ 兩個測試都成功完成")
+        print("\n關鍵差異：")
+        print("1. 無 RAG：LLM 只能基於訓練數據回答")
+        print("   - 如果問題涉及私有文檔內容，LLM 可能無法回答或回答錯誤")
+        print("2. 有 RAG：LLM 可以基於檢索到的私有文檔回答")
+        print("   - 即使問題涉及私有文檔內容，LLM 也能基於檢索結果正確回答")
+        print("\n💡 如果問題涉及私有文檔內容，有 RAG 的回答應該更準確、更具體！")
+    elif no_rag_answer:
+        print("\n⚠️  無 RAG 測試成功，但有 RAG 測試失敗")
+        print("   請檢查檢索系統是否正常工作")
+    elif rag_answer:
+        print("\n⚠️  有 RAG 測試成功，但無 RAG 測試失敗")
+        print("   請檢查 LLM 連接是否正常")
+    else:
+        print("\n❌ 兩個測試都失敗")
+        print("   請檢查系統配置")
+
+
 def main():
     """主程式：示範 hybrid search 的使用"""
     
@@ -755,7 +908,7 @@ def main():
                     answer = llm.generate(
                         prompt=full_prompt,
                         temperature=0.7,
-                        max_tokens=500,
+                        max_tokens=2048,
                         stream=False
                     )
                     

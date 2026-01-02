@@ -2,6 +2,7 @@
 Prompt 格式化模組：將檢索結果格式化為 LLM 可讀的上下文
 """
 from typing import List, Dict, Optional
+import re
 
 
 class PromptFormatter:
@@ -11,7 +12,8 @@ class PromptFormatter:
         self,
         include_metadata: bool = True,
         format_style: str = "detailed",
-        max_context_length: Optional[int] = None
+        max_context_length: Optional[int] = None,
+        auto_detect_language: bool = True
     ):
         """
         初始化 Prompt 格式化器
@@ -20,10 +22,80 @@ class PromptFormatter:
             include_metadata: 是否包含來源信息
             format_style: 格式風格 ("detailed", "simple", "minimal")
             max_context_length: 最大上下文長度（字符數），None 表示不限制
+            auto_detect_language: 是否自動檢測語言並相應調整回答語言
         """
         self.include_metadata = include_metadata
         self.format_style = format_style
         self.max_context_length = max_context_length
+        self.auto_detect_language = auto_detect_language
+    
+    @staticmethod
+    def detect_language(text: str) -> str:
+        """
+        檢測文本的主要語言
+        
+        Args:
+            text: 輸入文本
+            
+        Returns:
+            "zh" 表示中文，"en" 表示英文
+        """
+        # 檢查是否包含中文字符（CJK 統一表意文字範圍）
+        chinese_pattern = re.compile(r'[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]')
+        chinese_chars = len(chinese_pattern.findall(text))
+        
+        # 計算中文字符比例
+        total_chars = len([c for c in text if c.isalnum() or c.isspace()])
+        
+        if total_chars == 0:
+            return "en"  # 默認英文
+        
+        chinese_ratio = chinese_chars / total_chars if total_chars > 0 else 0
+        
+        # 如果中文字符比例超過 20%，認為是中文
+        if chinese_ratio > 0.2:
+            return "zh"
+        else:
+            return "en"
+    
+    def get_system_prompt(self, language: str = "zh") -> str:
+        """
+        根據語言獲取系統提示詞
+        
+        Args:
+            language: 語言代碼 ("zh" 或 "en")
+            
+        Returns:
+            系統提示詞字符串
+        """
+        if language == "zh":
+            return (
+                "你是一個專業的 AI 研究助手，專門回答關於機器學習、"
+                "深度學習和自然語言處理的問題。\n\n"
+                "請基於以下提供的學術論文片段來回答用戶的問題。"
+                "每個片段都標註了來源論文的信息。\n\n"
+                "回答要求：\n"
+                "1. 基於提供的上下文回答問題\n"
+                "2. 如果上下文不足以回答，請明確說明\n"
+                "3. 在回答中引用具體的論文來源（使用 arXiv ID）\n"
+                "4. 如果不同論文有不同觀點，請分別說明\n"
+                "5. 保持回答簡潔、準確、專業\n"
+                "6. **重要：請使用與用戶問題相同的語言回答**\n"
+            )
+        else:  # English
+            return (
+                "You are a professional AI research assistant specializing in "
+                "machine learning, deep learning, and natural language processing.\n\n"
+                "Please answer the user's question based on the provided academic paper excerpts. "
+                "Each excerpt is labeled with source paper information.\n\n"
+                "Answer requirements:\n"
+                "1. Answer the question based on the provided context\n"
+                "2. If the context is insufficient, clearly state so\n"
+                "3. Cite specific paper sources in your answer (using arXiv ID)\n"
+                "4. If different papers have different viewpoints, explain them separately\n"
+                "5. Keep answers concise, accurate, and professional\n"
+                "6. **Important: Please answer in the same language as the user's question**\n"
+            )
     
     def format_context(
         self, 
@@ -48,7 +120,11 @@ class PromptFormatter:
             format_style = self.format_style
         
         if not results:
-            return "（未找到相關文獻片段）"
+            # 根據格式風格選擇語言
+            if format_style == "detailed" or format_style == "simple":
+                return "（未找到相關文獻片段）"
+            else:
+                return "(No relevant excerpts found)"
         
         formatted_parts = []
         
@@ -134,26 +210,24 @@ class PromptFormatter:
         Args:
             query: 用戶查詢
             context: 格式化後的上下文
-            system_prompt: 可選的系統提示詞
+            system_prompt: 可選的系統提示詞（如果為 None，會根據語言自動選擇）
             
         Returns:
             完整的 prompt 字符串
         """
-        if system_prompt is None:
-            system_prompt = (
-                "你是一個專業的 AI 研究助手，專門回答關於機器學習、"
-                "深度學習和自然語言處理的問題。\n\n"
-                "請基於以下提供的學術論文片段來回答用戶的問題。"
-                "每個片段都標註了來源論文的信息。\n\n"
-                "回答要求：\n"
-                "1. 基於提供的上下文回答問題\n"
-                "2. 如果上下文不足以回答，請明確說明\n"
-                "3. 在回答中引用具體的論文來源（使用 arXiv ID）\n"
-                "4. 如果不同論文有不同觀點，請分別說明\n"
-                "5. 保持回答簡潔、準確、專業\n"
-            )
+        # 自動檢測語言並選擇相應的系統提示詞
+        if system_prompt is None and self.auto_detect_language:
+            detected_language = self.detect_language(query)
+            system_prompt = self.get_system_prompt(detected_language)
+        elif system_prompt is None:
+            # 如果禁用自動檢測，使用中文作為默認
+            system_prompt = self.get_system_prompt("zh")
         
-        prompt = f"""{system_prompt}
+        # 根據檢測到的語言選擇提示詞格式
+        detected_language = self.detect_language(query) if self.auto_detect_language else "zh"
+        
+        if detected_language == "zh":
+            prompt = f"""{system_prompt}
 
 ## 相關文獻片段：
 
@@ -164,6 +238,18 @@ class PromptFormatter:
 {query}
 
 ## 請基於上述文獻片段回答問題，並在回答中引用具體的論文來源。"""
+        else:  # English
+            prompt = f"""{system_prompt}
+
+## Relevant Document Excerpts:
+
+{context}
+
+## User Question:
+
+{query}
+
+## Please answer the question based on the above document excerpts and cite specific paper sources in your answer."""
         
         return prompt
     

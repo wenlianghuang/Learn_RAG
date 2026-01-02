@@ -14,6 +14,12 @@ class OllamaLLM:
     
     # 適合 16GB MacBook Air 的模型推薦
     RECOMMENDED_MODELS = {
+        "deepseek-r1:7b": {
+            "name": "deepseek-r1:7b",
+            "description": "DeepSeek R1 7B - 大模型，高質量",
+            "memory_required": "~8GB",
+            "quality": "優秀"
+        },
         "llama3.2:3b": {
             "name": "llama3.2:3b",
             "description": "Meta Llama 3.2 3B - 輕量級，適合 16GB 內存",
