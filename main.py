@@ -738,9 +738,12 @@ def main():
                 print("-" * 60)
                 
                 try:
-                    # 初始化 LLM
+                    # 顯示推薦的模型
+                    OllamaLLM.print_recommended_models()
+                    
+                    # 初始化 LLM（使用推薦的小模型）
                     llm = OllamaLLM(
-                        model_name="deepseek-r1:7b",
+                        model_name="llama3.2:3b",  # 適合 16GB 內存
                         timeout=180
                     )
                     
@@ -763,10 +766,11 @@ def main():
                     
                 except ConnectionError as e:
                     print(f"\n⚠️  Ollama 連接錯誤: {e}")
-                    print("\n請確保 Ollama 正在運行：")
-                    print("  1. 確保 Ollama 服務已啟動")
-                    print("  2. 確保已下載模型: ollama pull deepseek-r1:7b")
-                    print("  3. 檢查 Ollama 是否在運行: ollama list")
+                    print("\n請按照以下步驟設置 Ollama：")
+                    print("  1. 安裝 Ollama: https://ollama.ai/download")
+                    print("  2. 啟動 Ollama 服務（通常會自動啟動）")
+                    print("  3. 下載模型: ollama pull llama3.2:3b")
+                    print("  4. 重新運行此程序")
                 except Exception as e:
                     print(f"\n⚠️  LLM 生成出錯: {e}")
                     print("您可以繼續使用格式化功能，只是不生成 LLM 回答。")

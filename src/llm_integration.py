@@ -12,9 +12,43 @@ logger = logging.getLogger(__name__)
 class OllamaLLM:
     """使用 Ollama 進行本地 LLM 推理"""
     
+    # 適合 16GB MacBook Air 的模型推薦
+    RECOMMENDED_MODELS = {
+        "llama3.2:3b": {
+            "name": "llama3.2:3b",
+            "description": "Meta Llama 3.2 3B - 輕量級，適合 16GB 內存",
+            "memory_required": "~4GB",
+            "quality": "良好"
+        },
+        "llama3.2:1b": {
+            "name": "llama3.2:1b",
+            "description": "Meta Llama 3.2 1B - 極輕量級，快速響應",
+            "memory_required": "~2GB",
+            "quality": "基礎"
+        },
+        "phi3:mini": {
+            "name": "phi3:mini",
+            "description": "Microsoft Phi-3 Mini - 小模型，高質量",
+            "memory_required": "~3GB",
+            "quality": "良好"
+        },
+        "gemma:2b": {
+            "name": "gemma:2b",
+            "description": "Google Gemma 2B - 輕量級，開源",
+            "memory_required": "~3GB",
+            "quality": "良好"
+        },
+        "mistral:7b": {
+            "name": "mistral:7b",
+            "description": "Mistral 7B - 較大但質量高（如果內存足夠）",
+            "memory_required": "~8GB",
+            "quality": "優秀"
+        }
+    }
+    
     def __init__(
         self,
-        model_name: str = "deepseek-r1:7b",
+        model_name: str = "llama3.2:3b",
         base_url: str = "http://localhost:11434",
         timeout: int = 120
     ):
@@ -22,7 +56,7 @@ class OllamaLLM:
         初始化 Ollama LLM
         
         Args:
-            model_name: Ollama 模型名稱（預設: deepseek-r1:7b）
+            model_name: Ollama 模型名稱（預設: llama3.2:3b）
             base_url: Ollama API 基礎 URL
             timeout: 請求超時時間（秒）
         """
@@ -30,6 +64,13 @@ class OllamaLLM:
         self.base_url = base_url.rstrip('/')
         self.timeout = timeout
         self.api_url = f"{self.base_url}/api"
+        
+        # 檢查模型是否在推薦列表中
+        if model_name not in self.RECOMMENDED_MODELS:
+            logger.warning(
+                f"⚠️  模型 '{model_name}' 不在推薦列表中。"
+                f"推薦的模型: {', '.join(self.RECOMMENDED_MODELS.keys())}"
+            )
         
         logger.info(f"✅ Ollama LLM 初始化完成 (模型: {model_name})")
     
@@ -181,4 +222,19 @@ class OllamaLLM:
             logger.error(f"❌ 獲取模型列表時出錯: {e}")
             return []
     
+    @classmethod
+    def print_recommended_models(cls):
+        """打印推薦的模型列表"""
+        print("\n" + "="*60)
+        print("適合 16GB MacBook Air 的 Ollama 模型推薦")
+        print("="*60)
+        print()
+        
+        for model_key, info in cls.RECOMMENDED_MODELS.items():
+            print(f"📦 {info['name']}")
+            print(f"   描述: {info['description']}")
+            print(f"   內存需求: {info['memory_required']}")
+            print(f"   質量: {info['quality']}")
+            print(f"   下載命令: ollama pull {info['name']}")
+            print()
 
