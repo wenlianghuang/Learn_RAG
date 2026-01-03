@@ -13,6 +13,8 @@ from .retrievers import (
 from .prompt_formatter import PromptFormatter
 from .llm_integration import OllamaLLM
 from .subquery_rag import SubQueryDecompositionRAG
+from .hyde_rag import HyDERAG
+from .hybrid_subquery_hyde_rag import HybridSubqueryHyDERAG
 
 __all__ = [
     "DocumentProcessor",
@@ -25,5 +27,7 @@ __all__ = [
     "PromptFormatter",
     "OllamaLLM",
     "SubQueryDecompositionRAG",
+    "HyDERAG",
+    "HybridSubqueryHyDERAG",
 ]
 
