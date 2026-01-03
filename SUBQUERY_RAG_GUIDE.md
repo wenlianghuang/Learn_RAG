@@ -25,7 +25,7 @@ Sub-query Decomposition RAG（子問題拆解 RAG）是一種進階的 RAG（Ret
 
 ### 核心思想
 
-當用戶提出一個複雜的、包含多個面向的問題時，單一的檢索查詢可能無法全面覆蓋所有相關信息。Sub-query Decomposition RAG 的解決方案是：
+當用戶提出一個複雜的、包含多個面向的問題時，單一的檢索查詢可能無法全面覆蓋所有相關資訊。Sub-query Decomposition RAG 的解決方案是：
 
 1. **問題拆解**：使用 LLM 將原始問題拆解成多個專注於特定面向的子問題
 2. **並行檢索**：對每個子問題分別進行檢索，獲取相關文檔
@@ -38,7 +38,7 @@ Sub-query Decomposition RAG（子問題拆解 RAG）是一種進階的 RAG（Ret
 - 複雜的比較問題（如「比較 A 和 B 的差異、優缺點和應用場景」）
 - 多面向查詢（如「transformer architecture, attention mechanism, and optimization」）
 - 綜合性問題（如「京都與大阪的賞楓交通與擁擠度比較」）
-- 需要從多個角度檢索信息的問題
+- 需要從多個角度檢索資訊的問題
 
 ❌ **不適合使用的情況：**
 - 簡單的單一問題（如「什麼是機器學習？」）
@@ -114,7 +114,7 @@ Sub-query Decomposition RAG（子問題拆解 RAG）是一種進階的 RAG（Ret
 **去重策略：**
 1. 優先使用 metadata 中的唯一標識：
    - `arxiv_id + chunk_index`（論文）
-   - `file_path + chunk_index`（文件）
+   - `file_path + chunk_index`（檔案）
 2. 回退到內容 hash（MD5 前 16 位）
 
 **分數保留：**
@@ -400,7 +400,7 @@ question = "比較深度學習和機器學習的差異、優缺點和應用場�
 {
     "arxiv_id": "1234.5678",  # 只檢索特定論文
     "title": "Machine Learning",  # 標題包含關鍵詞
-    "file_path": "/path/to/file.pdf"  # 特定文件
+    "file_path": "/path/to/file.pdf"  # 特定檔案
 }
 ```
 
@@ -464,8 +464,8 @@ formatter = PromptFormatter(
 **說明：** 文檔類型，用於調整 prompt 格式。
 
 **選項：**
-- `"paper"` - 學術論文（會包含 arXiv ID、作者等信息）
-- `"cv"` - 簡歷/履歷（會包含文件路徑等信息）
+- `"paper"` - 學術論文（會包含 arXiv ID、作者等資訊）
+- `"cv"` - 簡歷/履歷（會包含檔案路徑等資訊）
 - `"general"` - 通用文檔（預設）
 
 **示例：**
@@ -629,7 +629,7 @@ result = subquery_rag.generate_answer(
 )
 ```
 
-**優勢：** 分別檢索每個概念，避免單一查詢可能遺漏的信息。
+**優勢：** 分別檢索每個概念，避免單一查詢可能遺漏的資訊。
 
 ### 場景 3: 綜合性旅遊查詢
 
@@ -653,7 +653,7 @@ result = subquery_rag.generate_answer(
 )
 ```
 
-**優勢：** 從不同角度檢索，提供更全面的信息。
+**優勢：** 從不同角度檢索，提供更全面的資訊。
 
 ### 場景 4: 學術研究查詢
 
@@ -935,7 +935,7 @@ if validate_results(result):
 | **響應時間** | 較快（~2-5秒） | 稍慢（~5-15秒，取決於子問題數） |
 | **資源消耗** | 較低 | 較高（需要額外 LLM 調用） |
 | **準確性（簡單問題）** | 較好 | 可能過度複雜化 |
-| **準確性（複雜問題）** | 可能遺漏信息 | 更好 |
+| **準確性（複雜問題）** | 可能遺漏資訊 | 更好 |
 | **實現複雜度** | 簡單 | 中等 |
 | **維護成本** | 低 | 中等 |
 

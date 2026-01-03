@@ -162,7 +162,7 @@ Sub-question list:"""
         metadata_filter: Optional[Dict] = None
     ) -> List[Dict]:
         """
-        針對所有子問題進行檢索，並移除重複的文件
+        針對所有子問題進行檢索，並移除重複的檔案
         
         Args:
             sub_queries: 子問題列表
@@ -254,7 +254,7 @@ Sub-question list:"""
             return_sub_queries: 是否在結果中包含子問題列表
             
         Returns:
-            包含檢索結果和統計信息的字典
+            包含檢索結果和統計資訊的字典
         """
         start_time = time.time()
         
@@ -305,7 +305,7 @@ Sub-question list:"""
             return_sub_queries: 是否在結果中包含子問題列表
             
         Returns:
-            包含檢索結果、生成的答案和統計信息的字典
+            包含檢索結果、生成的答案和統計資訊的字典
         """
         # 檢索
         retrieval_result = self.query(

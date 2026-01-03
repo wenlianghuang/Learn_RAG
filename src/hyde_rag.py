@@ -53,7 +53,7 @@ class HyDERAG:
         is_chinese = PromptFormatter.detect_language(question) == "zh"
         
         if is_chinese:
-            prompt = f"""請針對以下問題，寫出一段約 {self.hypothetical_length} 字的專業技術文件內容。
+            prompt = f"""請針對以下問題，寫出一段約 {self.hypothetical_length} 字的專業技術檔案內容。
 這段內容應包含該領域常見的專業術語與原理說明，以便用於後續的語義檢索。
 請使用專業的術語和概念，即使你對某些細節不確定，也要包含相關的專業詞彙。
 
@@ -108,7 +108,7 @@ Professional technical content:"""
             return_hypothetical: 是否在結果中包含假設性文檔
             
         Returns:
-            包含檢索結果和統計信息的字典
+            包含檢索結果和統計資訊的字典
         """
         start_time = time.time()
         
@@ -157,7 +157,7 @@ Professional technical content:"""
             return_hypothetical: 是否在結果中包含假設性文檔
             
         Returns:
-            包含檢索結果、生成的答案和統計信息的字典
+            包含檢索結果、生成的答案和統計資訊的字典
         """
         start_time = time.time()
         
