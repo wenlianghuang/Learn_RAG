@@ -10,10 +10,12 @@ wheels/
 .venv
 
 # Data and cache directories
-chroma_db/
+chroma_db*/
 *.db
 *.sqlite3
 
 # Hugging Face cache (optional, uncomment if you want to ignore)
 # .cache/
 # huggingface_cache/
+.DS_Store
+*.pdf

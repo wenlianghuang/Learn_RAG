@@ -2,14 +2,26 @@
 RAG 系統模組套件
 """
 from .document_processor import DocumentProcessor
-from .bm25_retriever import BM25Retriever
-from .vector_retriever import VectorRetriever
-from .hybrid_search import HybridSearch
+from .retrievers import (
+    BaseRetriever,
+    BM25Retriever,
+    VectorRetriever,
+    HybridSearch,
+    Reranker,
+    RAGPipeline,
+)
+from .prompt_formatter import PromptFormatter
+from .llm_integration import OllamaLLM
 
 __all__ = [
     "DocumentProcessor",
+    "BaseRetriever",
     "BM25Retriever",
     "VectorRetriever",
     "HybridSearch",
+    "Reranker",
+    "RAGPipeline",
+    "PromptFormatter",
+    "OllamaLLM",
 ]
 
