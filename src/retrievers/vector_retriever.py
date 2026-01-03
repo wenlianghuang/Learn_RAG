@@ -1,7 +1,11 @@
 """
 向量檢索器模組：使用 embedding 和向量資料庫進行語義檢索
+
+支援兩種初始化方式：
+1. 自動初始化 embeddings（預設）：根據參數創建新的 embedding 模型
+2. 使用外部 embeddings：接收已初始化的 embedding 模型（可與 DocumentProcessor 共用）
 """
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
 import os
@@ -52,7 +56,8 @@ class VectorRetriever(BaseRetriever):
         embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
         persist_directory: Optional[str] = "./chroma_db",
         hf_cache_dir: Optional[str] = None,
-        device: Optional[str] = None
+        device: Optional[str] = None,
+        embeddings: Optional[Any] = None  # 可選：外部傳入的 embedding 模型（優先使用）
     ):
         """
         初始化向量檢索器（使用 Hugging Face embeddings）
@@ -60,49 +65,64 @@ class VectorRetriever(BaseRetriever):
         Args:
             documents: 文檔列表，每個文檔包含 "content" 和 "metadata"
             embedding_model: Hugging Face embedding 模型名稱（預設: "sentence-transformers/all-MiniLM-L6-v2"）
+                            僅在 embeddings=None 時使用
             persist_directory: Chroma 資料庫持久化目錄
             hf_cache_dir: Hugging Face 模型緩存目錄（例如外接硬碟路徑）
                          如果為 None，則使用環境變數 HF_HOME 或默認位置 ~/.cache/huggingface/
+                         僅在 embeddings=None 時使用
             device: 設備名稱 ('mps', 'cuda', 'cpu')，如果為 None 則自動檢測最佳設備
+                   僅在 embeddings=None 時使用
+            embeddings: 可選的外部 embedding 模型物件
+                       如果提供，將優先使用此模型，忽略其他參數（embedding_model, hf_cache_dir, device）
+                       這允許與 DocumentProcessor 共用同一個 embedding 模型實例
+                       優點：
+                       - 節省內存（只加載一次模型）
+                       - 節省時間（避免重複初始化）
+                       - 確保一致性（分塊和檢索使用相同的模型）
         """
-        # 使用 Hugging Face embeddings（本地運行，完全免費）
-        print(f"使用 Hugging Face embedding 模型: {embedding_model}")
-        
-        # 設置 Hugging Face 緩存目錄
-        if hf_cache_dir:
-            # 如果指定了緩存目錄，設置環境變數
-            os.environ['HF_HOME'] = hf_cache_dir
-            os.environ['TRANSFORMERS_CACHE'] = hf_cache_dir
-            print(f"模型將存儲在: {hf_cache_dir}")
+        # 優先使用傳入的共用模型
+        if embeddings is not None:
+            self.embeddings = embeddings
+            print("✓ 使用外部傳入的 embeddings 模型（與 DocumentProcessor 共用）")
         else:
-            # 檢查是否已經設置了環境變數
-            default_cache = os.path.expanduser("~/.cache/huggingface")
-            current_cache = os.getenv('HF_HOME', default_cache)
-            print(f"模型緩存位置: {current_cache}")
-            print("提示: 可以通過設置 hf_cache_dir 參數或環境變數 HF_HOME 來指定外接硬碟路徑")
-        
-        # 自動檢測或使用指定的設備
-        if device is None:
-            device = get_device()
-        
-        device_name_map = {
-            'mps': 'MPS (macOS GPU)',
-            'cuda': 'CUDA (NVIDIA GPU)',
-            'cpu': 'CPU'
-        }
-        print(f"使用設備: {device_name_map.get(device, device)}")
-        print("首次使用時會下載模型，請稍候...")
-        
-        # 構建 model_kwargs，包含緩存目錄和設備
-        model_kwargs = {'device': device}
-        if hf_cache_dir:
-            model_kwargs['cache_dir'] = hf_cache_dir
-        
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name=embedding_model,
-            model_kwargs=model_kwargs,
-            encode_kwargs={'normalize_embeddings': True}  # 正規化 embeddings 以提升效果
-        )
+            # 若無傳入，則執行原有的初始化邏輯
+            print(f"使用 Hugging Face embedding 模型: {embedding_model}")
+            
+            # 設置 Hugging Face 緩存目錄
+            if hf_cache_dir:
+                # 如果指定了緩存目錄，設置環境變數
+                os.environ['HF_HOME'] = hf_cache_dir
+                os.environ['TRANSFORMERS_CACHE'] = hf_cache_dir
+                print(f"模型將存儲在: {hf_cache_dir}")
+            else:
+                # 檢查是否已經設置了環境變數
+                default_cache = os.path.expanduser("~/.cache/huggingface")
+                current_cache = os.getenv('HF_HOME', default_cache)
+                print(f"模型緩存位置: {current_cache}")
+                print("提示: 可以通過設置 hf_cache_dir 參數或環境變數 HF_HOME 來指定外接硬碟路徑")
+            
+            # 自動檢測或使用指定的設備
+            if device is None:
+                device = get_device()
+            
+            device_name_map = {
+                'mps': 'MPS (macOS GPU)',
+                'cuda': 'CUDA (NVIDIA GPU)',
+                'cpu': 'CPU'
+            }
+            print(f"使用設備: {device_name_map.get(device, device)}")
+            print("首次使用時會下載模型，請稍候...")
+            
+            # 構建 model_kwargs，包含緩存目錄和設備
+            model_kwargs = {'device': device}
+            if hf_cache_dir:
+                model_kwargs['cache_dir'] = hf_cache_dir
+            
+            self.embeddings = HuggingFaceEmbeddings(
+                model_name=embedding_model,
+                model_kwargs=model_kwargs,
+                encode_kwargs={'normalize_embeddings': True}  # 正規化 embeddings 以提升效果
+            )
         
         # 將文檔轉換為 LangChain Document 格式
         # 需要將 metadata 中的列表轉換為字串，因為 ChromaDB 不接受列表類型

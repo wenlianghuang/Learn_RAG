@@ -360,6 +360,46 @@ def comprehensive_rag_test(
             continue
 
 
+def detect_document_type(file_path: Optional[str] = None, results: Optional[List[Dict]] = None) -> str:
+    """
+    自動檢測文檔類型
+    
+    Args:
+        file_path: 文件路徑（可選）
+        results: 檢索結果列表（可選，用於從 metadata 推斷）
+        
+    Returns:
+        文檔類型 ("paper", "cv", "general")
+    """
+    # 優先從文件路徑判斷
+    if file_path:
+        file_path_lower = file_path.lower()
+        if any(keyword in file_path_lower for keyword in ["cv", "resume", "履歷", "簡歷"]):
+            return "cv"
+        elif any(keyword in file_path_lower for keyword in ["arxiv", "paper", "論文"]):
+            return "paper"
+    
+    # 從檢索結果的 metadata 判斷
+    if results:
+        for result in results:
+            metadata = result.get("metadata", {})
+            # 如果有 arxiv_id，很可能是論文
+            if "arxiv_id" in metadata:
+                return "paper"
+            # 如果有 file_path，檢查文件名
+            if "file_path" in metadata:
+                file_path_lower = str(metadata.get("file_path", "")).lower()
+                if any(keyword in file_path_lower for keyword in ["cv", "resume", "履歷", "簡歷"]):
+                    return "cv"
+            # 檢查標題
+            title = str(metadata.get("title", "")).lower()
+            if any(keyword in title for keyword in ["cv", "resume", "curriculum vitae", "履歷", "簡歷"]):
+                return "cv"
+    
+    # 預設為通用類型
+    return "general"
+
+
 def test_rag_vs_no_rag(
     llm: OllamaLLM,
     rag_pipeline: RAGPipeline,
@@ -450,9 +490,21 @@ Please answer in English."""
         
         print(f"✅ 找到 {len(rag_results)} 個相關片段")
         
-        # 格式化並生成回答
-        formatted_context = formatter.format_context(rag_results, format_style="detailed")
-        rag_prompt = formatter.create_prompt(query, formatted_context)
+        # 自動檢測文檔類型
+        document_type = detect_document_type(test_file_path, rag_results)
+        print(f"  檢測到的文檔類型: {document_type}")
+        
+        # 格式化並生成回答（傳入文檔類型）
+        formatted_context = formatter.format_context(
+            rag_results, 
+            format_style="detailed",
+            document_type=document_type
+        )
+        rag_prompt = formatter.create_prompt(
+            query, 
+            formatted_context,
+            document_type=document_type
+        )
         
         print("\n生成回答中...")
         rag_answer = llm.generate(
@@ -514,19 +566,84 @@ Please answer in English."""
 
 
 def main():
-    """主程式：示範 hybrid search 的使用"""
+    """
+    主程式：示範 hybrid search 的使用
+    
+    支援兩種分塊模式：
+    - 字符分塊（預設）：快速、穩定
+    - 語義分塊（可選）：更智能，能保持語義完整性
+    
+    可以通過環境變數 USE_SEMANTIC_CHUNKING=true 啟用語義分塊
+    """
     
     print("=" * 60)
     print("Hybrid Search 系統初始化中...")
     print("使用 Hugging Face embedding 模型（完全免費，本地運行）")
     print("=" * 60)
     
+    # [步驟 0] 可選：初始化共用的 Embedding 模型（用於語義分塊）
+    # 檢查是否啟用語義分塊
+    use_semantic_chunking = os.getenv("USE_SEMANTIC_CHUNKING", "false").lower() == "true"
+    shared_embeddings = None
+    
+    if use_semantic_chunking:
+        print("\n[0/6] 初始化共用的 Embedding 模型（用於語義分塊）...")
+        try:
+            from langchain_community.embeddings import HuggingFaceEmbeddings
+            from src.retrievers.vector_retriever import get_device
+            
+            # 設置 Hugging Face 模型緩存目錄（可選：外接硬碟路徑）
+            hf_cache_dir = os.getenv("HF_CACHE_DIR", None)
+            
+            # 自動檢測設備（使用與 VectorRetriever 相同的邏輯）
+            device = get_device()
+            
+            device_name_map = {
+                'mps': 'MPS (macOS GPU)',
+                'cuda': 'CUDA (NVIDIA GPU)',
+                'cpu': 'CPU'
+            }
+            print(f"  使用設備: {device_name_map.get(device, device)}")
+            
+            # 構建 model_kwargs
+            model_kwargs = {'device': device}
+            if hf_cache_dir:
+                model_kwargs['cache_dir'] = hf_cache_dir
+                print(f"  模型緩存目錄: {hf_cache_dir}")
+            
+            # 初始化共用的 embedding 模型
+            shared_embeddings = HuggingFaceEmbeddings(
+                model_name="sentence-transformers/all-MiniLM-L6-v2",
+                model_kwargs=model_kwargs,
+                encode_kwargs={'normalize_embeddings': True}
+            )
+            print("  ✓ 共用 Embedding 模型初始化完成")
+            print("  💡 此模型將同時用於語義分塊和向量檢索，節省內存和時間")
+        except ImportError as e:
+            print(f"  ⚠️  無法初始化語義分塊所需的依賴: {e}")
+            print("  將回退到字符分塊模式")
+            use_semantic_chunking = False
+        except Exception as e:
+            print(f"  ⚠️  初始化 Embedding 模型失敗: {e}")
+            print("  將回退到字符分塊模式")
+            use_semantic_chunking = False
+    
     # 1. 初始化文檔處理器
-    print("\n[1/5] 初始化文檔處理器...")
-    processor = DocumentProcessor(chunk_size=1000, chunk_overlap=200)
+    print("\n[1/6] 初始化文檔處理器...")
+    if use_semantic_chunking and shared_embeddings:
+        # 使用語義分塊模式
+        processor = DocumentProcessor(
+            embeddings=shared_embeddings,
+            use_semantic_chunking=True,
+            breakpoint_threshold_amount=1.5,  # 語義分塊敏感度
+            min_chunk_size=100  # 最小 chunk 大小（字符數）
+        )
+    else:
+        # 使用字符分塊模式（預設）
+        processor = DocumentProcessor(chunk_size=1000, chunk_overlap=200)
     
     # 2. 獲取 arXiv 論文
-    print("\n[2/5] 從 arXiv 獲取論文...")
+    print("\n[2/6] 從 arXiv 獲取論文...")
     print("  搜尋 AI、機器學習和自然語言處理相關論文...")
     papers = processor.fetch_papers(
         query="cat:cs.AI OR cat:cs.LG OR cat:cs.CL",  # AI + 機器學習 + 自然語言處理
@@ -535,7 +652,9 @@ def main():
     print(f"獲取了 {len(papers)} 篇論文")
     
     # 3. 處理文檔（分割成 chunks）
-    print("\n[3/5] 處理文檔並分割成 chunks...")
+    print("\n[3/6] 處理文檔並分割成 chunks...")
+    if use_semantic_chunking:
+        print("  ⚠️  語義分塊需要計算 embedding，可能需要較長時間，請稍候...")
     documents = processor.process_documents(papers)
     print(f"總共創建了 {len(documents)} 個文檔 chunks")
     
@@ -543,10 +662,12 @@ def main():
     if documents:
         print("\n範例文檔（第一個 chunk）：")
         print(f"標題: {documents[0]['metadata']['title']}")
+        chunking_method = documents[0]['metadata'].get('chunking_method', 'character')
+        print(f"分塊方法: {chunking_method}")
         print(f"內容預覽: {documents[0]['content'][:200]}...")
     
     # 4. 初始化檢索器
-    print("\n[4/5] 初始化檢索器...")
+    print("\n[4/6] 初始化檢索器...")
     
     # 稀疏檢索器 (BM25)
     print("  - 初始化稀疏檢索器 (BM25)...")
@@ -558,15 +679,17 @@ def main():
     # 設置 Hugging Face 模型緩存目錄（可選：外接硬碟路徑）
     hf_cache_dir = os.getenv("HF_CACHE_DIR", None)
     
+    # 如果使用語義分塊，傳入共用的 embeddings
     vector_retriever = VectorRetriever(
         documents,
         embedding_model="sentence-transformers/all-MiniLM-L6-v2",
         persist_directory="./chroma_db",
-        hf_cache_dir=hf_cache_dir
+        hf_cache_dir=hf_cache_dir,
+        embeddings=shared_embeddings  # 傳入共用的 embeddings（如果有的話）
     )
     
     # 5. 初始化 Hybrid Search
-    print("\n[5/5] 初始化 Hybrid Search...")
+    print("\n[5/6] 初始化 Hybrid Search...")
     print("  使用 RRF (Reciprocal Rank Fusion) 方法（預設）")
     print("  RRF 不需要分數正規化，對不同分數分佈更魯棒")
     hybrid_search = HybridSearch(
@@ -875,14 +998,14 @@ def main():
             )
             
             if llm_results:
-                # 格式化檢索結果
+                # 格式化檢索結果（arXiv 論文使用 "paper" 類型）
                 print("\n格式化檢索結果...")
-                formatted_context = formatter.format_context(llm_results)
+                formatted_context = formatter.format_context(llm_results, document_type="paper")
                 print("\n格式化後的上下文（前 500 字符）：")
                 print(formatted_context[:500] + "...")
                 
-                # 創建完整的 prompt
-                full_prompt = formatter.create_prompt(test_query_llm, formatted_context)
+                # 創建完整的 prompt（arXiv 論文使用 "paper" 類型）
+                full_prompt = formatter.create_prompt(test_query_llm, formatted_context, document_type="paper")
                 print("\n完整 Prompt 長度:", len(full_prompt), "字符")
                 
                 # 嘗試使用 Ollama LLM
@@ -952,6 +1075,19 @@ def main():
     print("\n" + "=" * 60)
     print("完成！")
     print("=" * 60)
+    
+    # 提示：如何啟用語義分塊
+    if not use_semantic_chunking:
+        print("\n💡 提示：要啟用語義分塊模式，請設置環境變數：")
+        print("  export USE_SEMANTIC_CHUNKING=true")
+        print("  或")
+        print("  USE_SEMANTIC_CHUNKING=true python main.py")
+        print("\n語義分塊的優點：")
+        print("  - 能保持語義完整性，不會在句子中間切分")
+        print("  - 根據語義相似度自動決定切分點")
+        print("  - 可能提升檢索效果")
+        print("\n注意：語義分塊需要安裝 langchain-experimental：")
+        print("  pip install langchain-experimental")
 
 
 if __name__ == "__main__":

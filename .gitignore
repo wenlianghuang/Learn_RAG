@@ -17,3 +17,4 @@ chroma_db/
 # Hugging Face cache (optional, uncomment if you want to ignore)
 # .cache/
 # huggingface_cache/
+.DS_Store

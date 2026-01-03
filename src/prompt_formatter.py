@@ -58,50 +58,107 @@ class PromptFormatter:
         else:
             return "en"
     
-    def get_system_prompt(self, language: str = "zh") -> str:
+    def get_system_prompt(self, language: str = "zh", document_type: str = "general") -> str:
         """
-        根據語言獲取系統提示詞
+        根據語言和文檔類型獲取系統提示詞
         
         Args:
             language: 語言代碼 ("zh" 或 "en")
+            document_type: 文檔類型 ("paper", "cv", "general")
+                          "paper": 學術論文
+                          "cv": 簡歷/履歷
+                          "general": 通用文檔（預設）
             
         Returns:
             系統提示詞字符串
         """
         if language == "zh":
-            return (
-                "你是一個專業的 AI 研究助手，專門回答關於機器學習、"
-                "深度學習和自然語言處理的問題。\n\n"
-                "請基於以下提供的學術論文片段來回答用戶的問題。"
-                "每個片段都標註了來源論文的信息。\n\n"
-                "回答要求：\n"
-                "1. 基於提供的上下文回答問題\n"
-                "2. 如果上下文不足以回答，請明確說明\n"
-                "3. 在回答中引用具體的論文來源（使用 arXiv ID）\n"
-                "4. 如果不同論文有不同觀點，請分別說明\n"
-                "5. 保持回答簡潔、準確、專業\n"
-                "6. **重要：請使用與用戶問題相同的語言回答**\n"
-            )
+            if document_type == "paper":
+                return (
+                    "你是一個專業的 AI 研究助手，專門回答關於機器學習、"
+                    "深度學習和自然語言處理的問題。\n\n"
+                    "請基於以下提供的學術論文片段來回答用戶的問題。"
+                    "每個片段都標註了來源論文的信息。\n\n"
+                    "回答要求：\n"
+                    "1. 基於提供的上下文回答問題\n"
+                    "2. 如果上下文不足以回答，請明確說明\n"
+                    "3. 在回答中引用具體的論文來源（使用 arXiv ID）\n"
+                    "4. 如果不同論文有不同觀點，請分別說明\n"
+                    "5. 保持回答簡潔、準確、專業\n"
+                    "6. **重要：請使用與用戶問題相同的語言回答**\n"
+                )
+            elif document_type == "cv":
+                return (
+                    "你是一個專業的 AI 助手，專門幫助分析和介紹簡歷（CV）內容。\n\n"
+                    "請基於以下提供的文檔片段來回答用戶的問題。"
+                    "這些片段來自一份簡歷或履歷表。\n\n"
+                    "回答要求：\n"
+                    "1. 基於提供的上下文回答問題\n"
+                    "2. 如果上下文不足以回答，請明確說明\n"
+                    "3. 在回答中引用具體的文檔內容\n"
+                    "4. 保持回答簡潔、準確、專業\n"
+                    "5. **重要：請使用與用戶問題相同的語言回答**\n"
+                    "6. **請理解：這些片段就是簡歷的內容，請直接基於這些內容回答問題**\n"
+                )
+            else:  # general
+                return (
+                    "你是一個專業的 AI 助手。\n\n"
+                    "請基於以下提供的文檔片段來回答用戶的問題。"
+                    "每個片段都標註了來源信息。\n\n"
+                    "回答要求：\n"
+                    "1. 基於提供的上下文回答問題\n"
+                    "2. 如果上下文不足以回答，請明確說明\n"
+                    "3. 在回答中引用具體的文檔內容\n"
+                    "4. 保持回答簡潔、準確、專業\n"
+                    "5. **重要：請使用與用戶問題相同的語言回答**\n"
+                )
         else:  # English
-            return (
-                "You are a professional AI research assistant specializing in "
-                "machine learning, deep learning, and natural language processing.\n\n"
-                "Please answer the user's question based on the provided academic paper excerpts. "
-                "Each excerpt is labeled with source paper information.\n\n"
-                "Answer requirements:\n"
-                "1. Answer the question based on the provided context\n"
-                "2. If the context is insufficient, clearly state so\n"
-                "3. Cite specific paper sources in your answer (using arXiv ID)\n"
-                "4. If different papers have different viewpoints, explain them separately\n"
-                "5. Keep answers concise, accurate, and professional\n"
-                "6. **Important: Please answer in the same language as the user's question**\n"
-            )
+            if document_type == "paper":
+                return (
+                    "You are a professional AI research assistant specializing in "
+                    "machine learning, deep learning, and natural language processing.\n\n"
+                    "Please answer the user's question based on the provided academic paper excerpts. "
+                    "Each excerpt is labeled with source paper information.\n\n"
+                    "Answer requirements:\n"
+                    "1. Answer the question based on the provided context\n"
+                    "2. If the context is insufficient, clearly state so\n"
+                    "3. Cite specific paper sources in your answer (using arXiv ID)\n"
+                    "4. If different papers have different viewpoints, explain them separately\n"
+                    "5. Keep answers concise, accurate, and professional\n"
+                    "6. **Important: Please answer in the same language as the user's question**\n"
+                )
+            elif document_type == "cv":
+                return (
+                    "You are a professional AI assistant specializing in analyzing and introducing CV (Curriculum Vitae) content.\n\n"
+                    "Please answer the user's question based on the provided document excerpts. "
+                    "These excerpts are from a CV or resume.\n\n"
+                    "Answer requirements:\n"
+                    "1. Answer the question based on the provided context\n"
+                    "2. If the context is insufficient, clearly state so\n"
+                    "3. Cite specific document content in your answer\n"
+                    "4. Keep answers concise, accurate, and professional\n"
+                    "5. **Important: Please answer in the same language as the user's question**\n"
+                    "6. **Please understand: These excerpts ARE the CV content. Please answer directly based on this content.**\n"
+                )
+            else:  # general
+                return (
+                    "You are a professional AI assistant.\n\n"
+                    "Please answer the user's question based on the provided document excerpts. "
+                    "Each excerpt is labeled with source information.\n\n"
+                    "Answer requirements:\n"
+                    "1. Answer the question based on the provided context\n"
+                    "2. If the context is insufficient, clearly state so\n"
+                    "3. Cite specific document content in your answer\n"
+                    "4. Keep answers concise, accurate, and professional\n"
+                    "5. **Important: Please answer in the same language as the user's question**\n"
+                )
     
     def format_context(
         self, 
         results: List[Dict], 
         include_metadata: Optional[bool] = None,
-        format_style: Optional[str] = None
+        format_style: Optional[str] = None,
+        document_type: str = "general"
     ) -> str:
         """
         格式化檢索結果為 LLM 可讀的上下文
@@ -110,6 +167,7 @@ class PromptFormatter:
             results: 檢索結果列表
             include_metadata: 是否包含來源信息（覆蓋初始化參數）
             format_style: 格式風格（覆蓋初始化參數）
+            document_type: 文檔類型 ("paper", "cv", "general")，用於調整格式
             
         Returns:
             格式化後的上下文字符串
@@ -122,7 +180,7 @@ class PromptFormatter:
         if not results:
             # 根據格式風格選擇語言
             if format_style == "detailed" or format_style == "simple":
-                return "（未找到相關文獻片段）"
+                return "（未找到相關文檔片段）"
             else:
                 return "(No relevant excerpts found)"
         
@@ -136,24 +194,45 @@ class PromptFormatter:
                 # 不包含來源信息，直接使用內容
                 formatted_parts.append(f"{content}\n")
             elif format_style == "detailed":
-                # 詳細格式：包含完整來源信息
-                authors = metadata.get('authors', [])
-                if isinstance(authors, str):
-                    authors_str = authors
-                elif isinstance(authors, list):
-                    authors_str = ', '.join(authors[:3])  # 最多顯示 3 個作者
-                    if len(authors) > 3:
-                        authors_str += f" 等 {len(authors)} 位作者"
+                # 詳細格式：根據文檔類型調整顯示信息
+                if document_type == "cv":
+                    # CV 格式：顯示文件名和路徑
+                    source_info = (
+                        f"[來源 {i}]\n"
+                        f"文件標題: {metadata.get('title', 'N/A')}\n"
+                    )
+                    if 'file_path' in metadata:
+                        source_info += f"文件路徑: {metadata.get('file_path', 'N/A')}\n"
+                    if 'file_type' in metadata:
+                        source_info += f"文件類型: {metadata.get('file_type', 'N/A')}\n"
+                elif document_type == "paper":
+                    # 論文格式：顯示論文信息
+                    authors = metadata.get('authors', [])
+                    if isinstance(authors, str):
+                        authors_str = authors
+                    elif isinstance(authors, list):
+                        authors_str = ', '.join(authors[:3])  # 最多顯示 3 個作者
+                        if len(authors) > 3:
+                            authors_str += f" 等 {len(authors)} 位作者"
+                    else:
+                        authors_str = 'N/A'
+                    
+                    source_info = (
+                        f"[來源 {i}]\n"
+                        f"論文標題: {metadata.get('title', 'N/A')}\n"
+                        f"arXiv ID: {metadata.get('arxiv_id', 'N/A')}\n"
+                        f"作者: {authors_str}\n"
+                        f"發布日期: {metadata.get('published', 'N/A')}\n"
+                    )
                 else:
-                    authors_str = 'N/A'
-                
-                source_info = (
-                    f"[來源 {i}]\n"
-                    f"論文標題: {metadata.get('title', 'N/A')}\n"
-                    f"arXiv ID: {metadata.get('arxiv_id', 'N/A')}\n"
-                    f"作者: {authors_str}\n"
-                    f"發布日期: {metadata.get('published', 'N/A')}\n"
-                )
+                    # 通用格式：顯示可用的信息
+                    source_info = f"[來源 {i}]\n"
+                    if 'title' in metadata:
+                        source_info += f"標題: {metadata.get('title', 'N/A')}\n"
+                    if 'file_path' in metadata:
+                        source_info += f"文件: {metadata.get('file_path', 'N/A')}\n"
+                    if 'arxiv_id' in metadata:
+                        source_info += f"arXiv ID: {metadata.get('arxiv_id', 'N/A')}\n"
                 
                 # 添加相關性分數（如果有的話）
                 rerank_score = result.get('rerank_score')
@@ -169,20 +248,45 @@ class PromptFormatter:
             elif format_style == "simple":
                 # 簡單格式：只包含關鍵信息
                 title = metadata.get('title', 'N/A')
-                arxiv_id = metadata.get('arxiv_id', 'N/A')
-                source_info = (
-                    f"[來源 {i}: {title} "
-                    f"(arXiv:{arxiv_id})]\n"
-                    f"{content}\n"
-                )
+                if document_type == "paper" and 'arxiv_id' in metadata:
+                    arxiv_id = metadata.get('arxiv_id', 'N/A')
+                    source_info = (
+                        f"[來源 {i}: {title} "
+                        f"(arXiv:{arxiv_id})]\n"
+                        f"{content}\n"
+                    )
+                elif document_type == "cv" and 'file_path' in metadata:
+                    file_path = metadata.get('file_path', 'N/A')
+                    source_info = (
+                        f"[來源 {i}: {title} "
+                        f"({file_path})]\n"
+                        f"{content}\n"
+                    )
+                else:
+                    source_info = (
+                        f"[來源 {i}: {title}]\n"
+                        f"{content}\n"
+                    )
                 formatted_parts.append(source_info)
             else:  # minimal
-                # 最小格式：只標註來源 ID
-                arxiv_id = metadata.get('arxiv_id', 'N/A')
-                source_info = (
-                    f"[arXiv:{arxiv_id}]\n"
-                    f"{content}\n"
-                )
+                # 最小格式：只標註來源
+                if document_type == "paper" and 'arxiv_id' in metadata:
+                    arxiv_id = metadata.get('arxiv_id', 'N/A')
+                    source_info = (
+                        f"[arXiv:{arxiv_id}]\n"
+                        f"{content}\n"
+                    )
+                elif 'title' in metadata:
+                    title = metadata.get('title', 'N/A')
+                    source_info = (
+                        f"[{title}]\n"
+                        f"{content}\n"
+                    )
+                else:
+                    source_info = (
+                        f"[來源 {i}]\n"
+                        f"{content}\n"
+                    )
                 formatted_parts.append(source_info)
         
         formatted_text = "\n" + "="*60 + "\n".join(formatted_parts)
@@ -202,7 +306,8 @@ class PromptFormatter:
         self,
         query: str,
         context: str,
-        system_prompt: Optional[str] = None
+        system_prompt: Optional[str] = None,
+        document_type: str = "general"
     ) -> str:
         """
         創建完整的 LLM prompt
@@ -210,7 +315,8 @@ class PromptFormatter:
         Args:
             query: 用戶查詢
             context: 格式化後的上下文
-            system_prompt: 可選的系統提示詞（如果為 None，會根據語言自動選擇）
+            system_prompt: 可選的系統提示詞（如果為 None，會根據語言和文檔類型自動選擇）
+            document_type: 文檔類型 ("paper", "cv", "general")
             
         Returns:
             完整的 prompt 字符串
@@ -218,18 +324,30 @@ class PromptFormatter:
         # 自動檢測語言並選擇相應的系統提示詞
         if system_prompt is None and self.auto_detect_language:
             detected_language = self.detect_language(query)
-            system_prompt = self.get_system_prompt(detected_language)
+            system_prompt = self.get_system_prompt(detected_language, document_type)
         elif system_prompt is None:
             # 如果禁用自動檢測，使用中文作為默認
-            system_prompt = self.get_system_prompt("zh")
+            system_prompt = self.get_system_prompt("zh", document_type)
         
         # 根據檢測到的語言選擇提示詞格式
         detected_language = self.detect_language(query) if self.auto_detect_language else "zh"
         
+        # 根據文檔類型選擇不同的提示詞結尾
+        if document_type == "paper":
+            if detected_language == "zh":
+                ending = "## 請基於上述文獻片段回答問題，並在回答中引用具體的論文來源。"
+            else:
+                ending = "## Please answer the question based on the above document excerpts and cite specific paper sources in your answer."
+        else:
+            if detected_language == "zh":
+                ending = "## 請基於上述文檔片段回答問題，並在回答中引用具體的文檔內容。"
+            else:
+                ending = "## Please answer the question based on the above document excerpts and cite specific document content in your answer."
+        
         if detected_language == "zh":
             prompt = f"""{system_prompt}
 
-## 相關文獻片段：
+## 相關文檔片段：
 
 {context}
 
@@ -237,7 +355,7 @@ class PromptFormatter:
 
 {query}
 
-## 請基於上述文獻片段回答問題，並在回答中引用具體的論文來源。"""
+{ending}"""
         else:  # English
             prompt = f"""{system_prompt}
 
@@ -249,7 +367,7 @@ class PromptFormatter:
 
 {query}
 
-## Please answer the question based on the above document excerpts and cite specific paper sources in your answer."""
+{ending}"""
         
         return prompt
     
@@ -257,7 +375,8 @@ class PromptFormatter:
         self,
         query: str,
         results: List[Dict],
-        system_prompt: Optional[str] = None
+        system_prompt: Optional[str] = None,
+        document_type: str = "general"
     ) -> str:
         """
         一站式方法：格式化檢索結果並創建完整的 prompt
@@ -266,10 +385,11 @@ class PromptFormatter:
             query: 用戶查詢
             results: 檢索結果列表
             system_prompt: 可選的系統提示詞
+            document_type: 文檔類型 ("paper", "cv", "general")
             
         Returns:
             完整的 prompt 字符串
         """
-        context = self.format_context(results)
-        return self.create_prompt(query, context, system_prompt)
+        context = self.format_context(results, document_type=document_type)
+        return self.create_prompt(query, context, system_prompt, document_type)
 
