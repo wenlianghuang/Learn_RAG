@@ -2,7 +2,7 @@
 測試語義分塊功能的腳本
 
 這個腳本演示如何：
-1. 使用語義分塊處理私有文件（PDF, DOCX, TXT）
+1. 使用語義分塊處理私有檔案（PDF, DOCX, TXT）
 2. 對比語義分塊 vs 字符分塊的效果
 3. 建立 RAG 系統並測試檢索效果
 4. 對比測試：有 RAG vs 無 RAG 的效果
@@ -28,7 +28,7 @@ def compare_chunking_methods(file_path: str):
     對比語義分塊和字符分塊的效果
     
     Args:
-        file_path: 要測試的文件路徑
+        file_path: 要測試的檔案路徑
     """
     print("\n" + "=" * 60)
     print("對比：語義分塊 vs 字符分塊")
@@ -78,12 +78,12 @@ def compare_chunking_methods(file_path: str):
             print(f"    長度: {len(documents_char[0]['content'])} 字符")
             print(f"    內容預覽: {documents_char[0]['content'][:150]}...")
             
-            # 統計信息
+            # 統計資訊
             chunk_sizes = [len(doc['content']) for doc in documents_char]
             avg_size = sum(chunk_sizes) / len(chunk_sizes)
             min_size = min(chunk_sizes)
             max_size = max(chunk_sizes)
-            print(f"\n  統計信息：")
+            print(f"\n  統計資訊：")
             print(f"    平均大小: {avg_size:.0f} 字符")
             print(f"    最小大小: {min_size} 字符")
             print(f"    最大大小: {max_size} 字符")
@@ -113,12 +113,12 @@ def compare_chunking_methods(file_path: str):
                 print(f"    長度: {len(documents_semantic[0]['content'])} 字符")
                 print(f"    內容預覽: {documents_semantic[0]['content'][:150]}...")
                 
-                # 統計信息
+                # 統計資訊
                 chunk_sizes = [len(doc['content']) for doc in documents_semantic]
                 avg_size = sum(chunk_sizes) / len(chunk_sizes)
                 min_size = min(chunk_sizes)
                 max_size = max(chunk_sizes)
-                print(f"\n  統計信息：")
+                print(f"\n  統計資訊：")
                 print(f"    平均大小: {avg_size:.0f} 字符")
                 print(f"    最小大小: {min_size} 字符")
                 print(f"    最大大小: {max_size} 字符")
@@ -148,7 +148,7 @@ def compare_chunking_methods(file_path: str):
         print("  - 語義分塊的 chunks 大小可能更不規則，但語義更完整")
     elif documents_char:
         print(f"\n字符分塊: {len(documents_char)} 個 chunks")
-        print("語義分塊: 未完成（請檢查錯誤信息）")
+        print("語義分塊: 未完成（請檢查錯誤資訊）")
     
     return documents_char, documents_semantic, shared_embeddings
 
@@ -162,7 +162,7 @@ def test_with_semantic_chunking(
     使用語義分塊（或字符分塊）建立 RAG 系統並測試
     
     Args:
-        file_path: 文件路徑
+        file_path: 檔案路徑
         test_query: 測試問題
         use_semantic: 是否使用語義分塊（True: 語義分塊, False: 字符分塊）
     """
@@ -196,8 +196,8 @@ def test_with_semantic_chunking(
             print("  將回退到字符分塊模式")
             use_semantic = False
     
-    # 1. 處理文件
-    print(f"\n[步驟 1] 處理文件（使用{'語義分塊' if use_semantic else '字符分塊'}）...")
+    # 1. 處理檔案
+    print(f"\n[步驟 1] 處理檔案（使用{'語義分塊' if use_semantic else '字符分塊'}）...")
     print("-" * 60)
     
     try:
@@ -223,7 +223,7 @@ def test_with_semantic_chunking(
         print(f"  ❌ 需要安裝 langchain-experimental: pip install langchain-experimental")
         return
     except Exception as e:
-        print(f"  ❌ 處理文件失敗: {e}")
+        print(f"  ❌ 處理檔案失敗: {e}")
         import traceback
         traceback.print_exc()
         return
@@ -339,19 +339,19 @@ def main():
     print("  2. 使用語義分塊建立 RAG 系統並測試")
     print("  3. 對比有 RAG vs 無 RAG 的效果")
     
-    # ========== 步驟 1: 準備文件 ==========
-    print("\n[步驟 1] 準備測試文件")
+    # ========== 步驟 1: 準備檔案 ==========
+    print("\n[步驟 1] 準備測試檔案")
     print("-" * 60)
     
     if len(sys.argv) > 1:
         file_path = sys.argv[1]
     else:
-        file_path = input("\n請輸入文件路徑（PDF, DOCX, 或 TXT）: ").strip()
+        file_path = input("\n請輸入檔案路徑（PDF, DOCX, 或 TXT）: ").strip()
         
         if not file_path:
-            print("\n⚠️  未提供文件路徑")
+            print("\n⚠️  未提供檔案路徑")
             print("\n使用方法：")
-            print("  python test_semantic_chunking.py <文件路徑> [測試問題]")
+            print("  python test_semantic_chunking.py <檔案路徑> [測試問題]")
             print("\n範例：")
             print("  python test_semantic_chunking.py ./documents/my_document.pdf")
             return
@@ -359,12 +359,12 @@ def main():
     file_path = Path(file_path)
     
     if not file_path.exists():
-        print(f"\n❌ 文件不存在: {file_path}")
+        print(f"\n❌ 檔案不存在: {file_path}")
         return
     
-    print(f"✓ 找到文件: {file_path}")
-    print(f"  文件類型: {file_path.suffix}")
-    print(f"  文件大小: {file_path.stat().st_size / 1024:.2f} KB")
+    print(f"✓ 找到檔案: {file_path}")
+    print(f"  檔案類型: {file_path.suffix}")
+    print(f"  檔案大小: {file_path.stat().st_size / 1024:.2f} KB")
     
     # ========== 步驟 2: 選擇測試模式 ==========
     print("\n[步驟 2] 選擇測試模式")

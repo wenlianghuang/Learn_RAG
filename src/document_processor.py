@@ -1,6 +1,6 @@
 """
 文檔處理模組：載入 arXiv 論文並進行文字分割
-支援本地文件：PDF, DOCX, TXT
+支援本地檔案：PDF, DOCX, TXT
 支援兩種分塊策略：
 1. 字符分塊（預設）：基於固定字符數的分塊，速度快
 2. 語義分塊（可選）：基於語義相似度的分塊，能保持語義完整性
@@ -103,7 +103,7 @@ class DocumentProcessor:
         後處理 chunks：過濾和合併太小的 chunks
         
         語義分塊可能會產生一些非常小的 chunks（例如只有幾個單詞），
-        這些小 chunks 可能不包含足夠的上下文信息。此方法會：
+        這些小 chunks 可能不包含足夠的上下文資訊。此方法會：
         1. 將小於 min_chunk_size 的 chunks 合併到相鄰的 chunks
         2. 確保最終的 chunks 都有足夠的大小
         
@@ -410,7 +410,9 @@ class DocumentProcessor:
         text = re.sub(chinese_punct_pattern, r'\1\2', text)
         
         # 標點符號 + 空格 + 中文
-        punct_chinese_pattern = r'([，。、；：！？""''（）【】《》])\s+([\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff])'
+        # 使用 re.escape 來正確處理標點符號，避免轉義序列警告
+        punct_chars = '，。、；：！？""''（）【】《》'
+        punct_chinese_pattern = f'([{re.escape(punct_chars)}])\\s+([\\u4e00-\\u9fff\\u3400-\\u4dbf\\uf900-\\ufaff])'
         text = re.sub(punct_chinese_pattern, r'\1\2', text)
         
         # 3. 移除數字和中文之間的多餘空格（例如："500  公里" -> "500公里"）
@@ -444,10 +446,10 @@ class DocumentProcessor:
     
     def load_from_file(self, file_path: str) -> Dict:
         """
-        從本地文件載入文檔（支援 PDF, DOCX, TXT 等）
+        從本地檔案載入文檔（支援 PDF, DOCX, TXT 等）
         
         Args:
-            file_path: 文件路徑
+            file_path: 檔案路徑
             
         Returns:
             文檔字典，包含內容和元數據
@@ -455,13 +457,13 @@ class DocumentProcessor:
         file_path = Path(file_path)
         
         if not file_path.exists():
-            raise FileNotFoundError(f"文件不存在: {file_path}")
+            raise FileNotFoundError(f"檔案不存在: {file_path}")
         
         file_ext = file_path.suffix.lower()
         file_name = file_path.stem
         file_size = os.path.getsize(file_path)
         
-        # 根據文件類型選擇不同的加載器
+        # 根據檔案類型選擇不同的加載器
         if file_ext == '.pdf':
             try:
                 from langchain_community.document_loaders import PyPDFLoader
@@ -473,7 +475,7 @@ class DocumentProcessor:
                 full_text = self.clean_extracted_text(full_text)
             except ImportError:
                 raise ImportError(
-                    "需要安裝 pypdf 來處理 PDF 文件: pip install pypdf"
+                    "需要安裝 pypdf 來處理 PDF 檔案: pip install pypdf"
                 )
         
         elif file_ext in ['.docx', '.doc']:
@@ -486,7 +488,7 @@ class DocumentProcessor:
                 full_text = self.clean_extracted_text(full_text)
             except ImportError:
                 raise ImportError(
-                    "需要安裝 docx2txt 來處理 DOCX 文件: pip install docx2txt"
+                    "需要安裝 docx2txt 來處理 DOCX 檔案: pip install docx2txt"
                 )
         
         elif file_ext == '.txt':
@@ -502,16 +504,16 @@ class DocumentProcessor:
                     continue
             
             if full_text is None:
-                raise ValueError(f"無法讀取文件，嘗試的編碼都不適用: {encodings}")
+                raise ValueError(f"無法讀取檔案，嘗試的編碼都不適用: {encodings}")
         
         else:
             raise ValueError(
-                f"不支援的文件類型: {file_ext}\n"
+                f"不支援的檔案類型: {file_ext}\n"
                 f"支援的格式: .pdf, .docx, .doc, .txt"
             )
         
         if not full_text or len(full_text.strip()) == 0:
-            raise ValueError(f"文件為空或無法提取文字: {file_path}")
+            raise ValueError(f"檔案為空或無法提取文字: {file_path}")
         
         return {
             "title": file_name,
@@ -523,15 +525,15 @@ class DocumentProcessor:
     
     def process_file(self, file_path: str) -> List[Dict]:
         """
-        處理單個文件，分割成 chunks
+        處理單個檔案，分割成 chunks
         
         Args:
-            file_path: 文件路徑
+            file_path: 檔案路徑
             
         Returns:
             處理後的文檔 chunks 列表
         """
-        # 載入文件
+        # 載入檔案
         file_doc = self.load_from_file(file_path)
         
         # 分割文字（根據選擇的模式：字符分塊或語義分塊）
@@ -541,7 +543,7 @@ class DocumentProcessor:
         chunks = self._post_process_chunks(chunks)
         
         if not chunks:
-            raise ValueError(f"文件分割後沒有內容: {file_path}")
+            raise ValueError(f"檔案分割後沒有內容: {file_path}")
         
         # 創建文檔 chunks
         documents = []
@@ -564,23 +566,23 @@ class DocumentProcessor:
     
     def process_files(self, file_paths: List[str]) -> List[Dict]:
         """
-        處理多個文件
+        處理多個檔案
         
         Args:
-            file_paths: 文件路徑列表
+            file_paths: 檔案路徑列表
             
         Returns:
-            所有文件的文檔 chunks 列表
+            所有檔案的文檔 chunks 列表
         """
         all_documents = []
         for file_path in file_paths:
             try:
-                print(f"處理文件: {file_path}")
+                print(f"處理檔案: {file_path}")
                 documents = self.process_file(file_path)
                 all_documents.extend(documents)
                 print(f"  ✓ 創建了 {len(documents)} 個 chunks")
             except Exception as e:
-                print(f"  ✗ 處理文件失敗: {file_path}")
+                print(f"  ✗ 處理檔案失敗: {file_path}")
                 print(f"    錯誤: {e}")
                 continue
         

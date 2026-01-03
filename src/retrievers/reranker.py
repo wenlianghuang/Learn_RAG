@@ -200,7 +200,7 @@ class Reranker:
                 reverse=True
             )
             
-            # 5. 統計信息
+            # 5. 統計資訊
             elapsed_time = time.time() - start_time
             avg_score = sum(scores) / len(scores) if scores else 0.0
             max_score = max(scores) if scores else 0.0
@@ -302,7 +302,7 @@ class RAGPipeline:
             top_k: 最終返回的結果數量
             metadata_filter: 可選的 metadata 過濾條件
             enable_rerank: 是否啟用重排序（可選，用於性能測試）
-            return_stats: 是否返回性能統計信息
+            return_stats: 是否返回性能統計資訊
             
         Returns:
             相關文檔列表，如果 return_stats=True，則返回 (results, stats) 元組
@@ -360,11 +360,11 @@ class RAGPipeline:
                 rerank_time = 0.0
                 logger.info("⏭️  跳過重排序階段（候選數不足或已禁用）")
             
-            # 更新統計信息
+            # 更新統計資訊
             total_time = time.time() - total_start
             self._update_stats(recall_time, rerank_time, total_time)
             
-            # 添加性能信息到結果（可選）
+            # 添加性能資訊到結果（可選）
             if return_stats:
                 stats = {
                     "recall_time": recall_time,
@@ -389,7 +389,7 @@ class RAGPipeline:
                 return []
     
     def _update_stats(self, recall_time: float, rerank_time: float, total_time: float):
-        """更新性能統計信息"""
+        """更新性能統計資訊"""
         n = self.stats["total_queries"]
         self.stats["avg_recall_time"] = (
             (self.stats["avg_recall_time"] * (n - 1) + recall_time) / n
@@ -402,11 +402,11 @@ class RAGPipeline:
         )
     
     def get_stats(self) -> Dict:
-        """獲取性能統計信息"""
+        """獲取性能統計資訊"""
         return self.stats.copy()
     
     def reset_stats(self):
-        """重置統計信息"""
+        """重置統計資訊"""
         self.stats = {
             "total_queries": 0,
             "avg_recall_time": 0.0,

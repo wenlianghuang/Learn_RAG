@@ -1,0 +1,134 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  test:
+    name: Test on Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.13"]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+        enable-cache: true
+    
+    - name: Install dependencies
+      run: |
+        uv sync
+    
+    - name: Verify Python version
+      run: |
+        uv run python --version
+        uv run python -c "import sys; assert sys.version_info >= (3, 13), 'Python 3.13+ required'"
+    
+    - name: Test imports
+      run: |
+        uv run python -c "from src import DocumentProcessor, BM25Retriever, VectorRetriever, HybridSearch; print('✅ Core imports successful')"
+    
+    - name: Run basic syntax check
+      run: |
+        find src -name "*.py" -exec uv run python -m py_compile {} \; || echo "⚠️ Syntax check completed with warnings"
+      continue-on-error: true
+
+  lint:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+        enable-cache: true
+    
+    - name: Install dependencies
+      run: |
+        uv sync
+    
+    - name: Install linting tools
+      run: |
+        uv pip install ruff black
+    
+    - name: Run ruff linter
+      run: |
+        ruff check src/ --output-format=github || echo "⚠️ Ruff found issues"
+      continue-on-error: true
+    
+    - name: Check code formatting with black
+      run: |
+        black --check src/ --diff || echo "⚠️ Code formatting issues found"
+      continue-on-error: true
+
+  build:
+    name: Build and Verify
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+        enable-cache: true
+    
+    - name: Install dependencies
+      run: |
+        uv sync
+    
+    - name: Verify all imports
+      run: |
+        echo "Testing core module imports..."
+        uv run python -c "
+        from src import (
+            DocumentProcessor,
+            BM25Retriever,
+            VectorRetriever,
+            HybridSearch,
+            Reranker,
+            RAGPipeline,
+            PromptFormatter
+        )
+        print('✅ All core imports successful')
+        "
+    
+    - name: Check project structure
+      run: |
+        test -f pyproject.toml && echo "✅ pyproject.toml found" || exit 1
+        test -d src && echo "✅ src directory found" || exit 1
+        test -f README.md && echo "✅ README.md found" || exit 1
+        echo "✅ Project structure verified"
+

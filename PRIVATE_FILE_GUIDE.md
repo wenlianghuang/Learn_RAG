@@ -1,8 +1,8 @@
-# 私有文件 RAG 使用指南
+# 私有檔案 RAG 使用指南
 
 ## 📋 概述
 
-本指南說明如何使用 RAG 系統處理私有文件（PDF, DOCX, TXT），並對比測試有 RAG 和無 RAG 的效果。
+本指南說明如何使用 RAG 系統處理私有檔案（PDF, DOCX, TXT），並對比測試有 RAG 和無 RAG 的效果。
 
 ## 🚀 快速開始
 
@@ -18,9 +18,9 @@ uv sync
 pip install pypdf docx2txt
 ```
 
-### 2. 準備你的私有文件
+### 2. 準備你的私有檔案
 
-支援的文件格式：
+支援的檔案格式：
 - **PDF** (`.pdf`)
 - **Word 文檔** (`.docx`, `.doc`)
 - **純文字** (`.txt`)
@@ -28,25 +28,25 @@ pip install pypdf docx2txt
 ### 3. 運行測試腳本
 
 ```bash
-# 方式 1: 直接運行，然後輸入文件路徑和問題
+# 方式 1: 直接運行，然後輸入檔案路徑和問題
 python test_private_file.py
 
-# 方式 2: 在命令行提供文件路徑
+# 方式 2: 在命令行提供檔案路徑
 python test_private_file.py ./documents/my_document.pdf
 
-# 方式 3: 提供文件路徑和問題
+# 方式 3: 提供檔案路徑和問題
 python test_private_file.py ./documents/my_document.pdf "這份文檔的主要內容是什麼？"
 ```
 
 ## 📝 使用範例
 
-### 範例 1: 處理 PDF 文件
+### 範例 1: 處理 PDF 檔案
 
 ```python
 from src import DocumentProcessor, BM25Retriever, VectorRetriever, HybridSearch
 from src import Reranker, RAGPipeline, PromptFormatter, OllamaLLM
 
-# 1. 處理文件
+# 1. 處理檔案
 processor = DocumentProcessor(chunk_size=1000, chunk_overlap=200)
 documents = processor.process_file("./my_document.pdf")
 
@@ -74,14 +74,14 @@ answer = llm.generate(prompt)
 print(answer)
 ```
 
-### 範例 2: 處理多個文件
+### 範例 2: 處理多個檔案
 
 ```python
 from src import DocumentProcessor
 
 processor = DocumentProcessor()
 
-# 處理多個文件
+# 處理多個檔案
 file_paths = [
     "./documents/report1.pdf",
     "./documents/report2.docx",
@@ -133,12 +133,12 @@ test_rag_vs_no_rag(
 如果 RAG 系統正常工作，你應該看到：
 
 1. **無 RAG 的回答**：
-   - 可能說"我無法回答"或"我沒有相關信息"
+   - 可能說"我無法回答"或"我沒有相關資訊"
    - 或者給出一個通用的、不準確的回答
 
 2. **有 RAG 的回答**：
    - 能夠基於文檔內容給出具體、準確的回答
-   - 會引用文檔中的具體信息
+   - 會引用文檔中的具體資訊
    - 回答更詳細、更相關
 
 ## 💡 測試問題建議
@@ -150,7 +150,7 @@ test_rag_vs_no_rag(
 - "這份文檔的主要內容是什麼？"
 - "文檔中提到了哪些關鍵概念？"
 - "文檔的結論是什麼？"
-- "文檔中提到了哪些數據或統計信息？"
+- "文檔中提到了哪些數據或統計資訊？"
 - "文檔中建議的解決方案是什麼？"
 
 ### ❌ 不好的測試問題（太通用）
@@ -161,11 +161,11 @@ test_rag_vs_no_rag(
 
 ## 🐛 常見問題
 
-### Q: 文件處理失敗
+### Q: 檔案處理失敗
 
 **A**: 檢查：
-1. 文件路徑是否正確
-2. 文件格式是否支援（PDF, DOCX, TXT）
+1. 檔案路徑是否正確
+2. 檔案格式是否支援（PDF, DOCX, TXT）
 3. 是否已安裝必要的依賴（pypdf, docx2txt）
 
 ### Q: 檢索不到相關文檔
@@ -191,9 +191,9 @@ test_rag_vs_no_rag(
 
 ## 📊 性能優化建議
 
-1. **文件大小**：
-   - 大文件（>10MB）可能需要較長處理時間
-   - 考慮將大文件分割成多個小文件
+1. **檔案大小**：
+   - 大檔案（>10MB）可能需要較長處理時間
+   - 考慮將大檔案分割成多個小檔案
 
 2. **Chunk 大小**：
    - 較小的 chunk（500-800）適合詳細檢索
@@ -205,9 +205,9 @@ test_rag_vs_no_rag(
 
 ## 🎯 最佳實踐
 
-1. **文件準備**：
-   - 確保文件文字清晰可讀
-   - PDF 文件最好包含可選文字層（不是掃描圖片）
+1. **檔案準備**：
+   - 確保檔案文字清晰可讀
+   - PDF 檔案最好包含可選文字層（不是掃描圖片）
 
 2. **問題設計**：
    - 使用具體的問題，涉及文檔內容

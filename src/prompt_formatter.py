@@ -19,7 +19,7 @@ class PromptFormatter:
         初始化 Prompt 格式化器
         
         Args:
-            include_metadata: 是否包含來源信息
+            include_metadata: 是否包含來源資訊
             format_style: 格式風格 ("detailed", "simple", "minimal")
             max_context_length: 最大上下文長度（字符數），None 表示不限制
             auto_detect_language: 是否自動檢測語言並相應調整回答語言
@@ -48,7 +48,7 @@ class PromptFormatter:
         total_chars = len([c for c in text if c.isalnum() or c.isspace()])
         
         if total_chars == 0:
-            return "en"  # 默認英文
+            return "en"  # 預設英文
         
         chinese_ratio = chinese_chars / total_chars if total_chars > 0 else 0
         
@@ -66,7 +66,7 @@ class PromptFormatter:
             language: 語言代碼 ("zh" 或 "en")
             document_type: 文檔類型 ("paper", "cv", "general")
                           "paper": 學術論文
-                          "cv": 簡歷/履歷
+                          "cv": 履歷/履歷
                           "general": 通用文檔（預設）
             
         Returns:
@@ -78,7 +78,7 @@ class PromptFormatter:
                     "你是一個專業的 AI 研究助手，專門回答關於機器學習、"
                     "深度學習和自然語言處理的問題。\n\n"
                     "請基於以下提供的學術論文片段來回答用戶的問題。"
-                    "每個片段都標註了來源論文的信息。\n\n"
+                    "每個片段都標註了來源論文的資訊。\n\n"
                     "回答要求：\n"
                     "1. 基於提供的上下文回答問題\n"
                     "2. 如果上下文不足以回答，請明確說明\n"
@@ -104,7 +104,7 @@ class PromptFormatter:
                 return (
                     "你是一個專業的 AI 助手。\n\n"
                     "請基於以下提供的文檔片段來回答用戶的問題。"
-                    "每個片段都標註了來源信息。\n\n"
+                    "每個片段都標註了來源資訊。\n\n"
                     "回答要求：\n"
                     "1. 基於提供的上下文回答問題\n"
                     "2. 如果上下文不足以回答，請明確說明\n"
@@ -165,7 +165,7 @@ class PromptFormatter:
         
         Args:
             results: 檢索結果列表
-            include_metadata: 是否包含來源信息（覆蓋初始化參數）
+            include_metadata: 是否包含來源資訊（覆蓋初始化參數）
             format_style: 格式風格（覆蓋初始化參數）
             document_type: 文檔類型 ("paper", "cv", "general")，用於調整格式
             
@@ -191,22 +191,22 @@ class PromptFormatter:
             metadata = result.get("metadata", {})
             
             if not include_metadata:
-                # 不包含來源信息，直接使用內容
+                # 不包含來源資訊，直接使用內容
                 formatted_parts.append(f"{content}\n")
             elif format_style == "detailed":
-                # 詳細格式：根據文檔類型調整顯示信息
+                # 詳細格式：根據文檔類型調整顯示資訊
                 if document_type == "cv":
-                    # CV 格式：顯示文件名和路徑
+                    # CV 格式：顯示檔案名和路徑
                     source_info = (
                         f"[來源 {i}]\n"
-                        f"文件標題: {metadata.get('title', 'N/A')}\n"
+                        f"檔案標題: {metadata.get('title', 'N/A')}\n"
                     )
                     if 'file_path' in metadata:
-                        source_info += f"文件路徑: {metadata.get('file_path', 'N/A')}\n"
+                        source_info += f"檔案路徑: {metadata.get('file_path', 'N/A')}\n"
                     if 'file_type' in metadata:
-                        source_info += f"文件類型: {metadata.get('file_type', 'N/A')}\n"
+                        source_info += f"檔案類型: {metadata.get('file_type', 'N/A')}\n"
                 elif document_type == "paper":
-                    # 論文格式：顯示論文信息
+                    # 論文格式：顯示論文資訊
                     authors = metadata.get('authors', [])
                     if isinstance(authors, str):
                         authors_str = authors
@@ -225,12 +225,12 @@ class PromptFormatter:
                         f"發布日期: {metadata.get('published', 'N/A')}\n"
                     )
                 else:
-                    # 通用格式：顯示可用的信息
+                    # 通用格式：顯示可用的資訊
                     source_info = f"[來源 {i}]\n"
                     if 'title' in metadata:
                         source_info += f"標題: {metadata.get('title', 'N/A')}\n"
                     if 'file_path' in metadata:
-                        source_info += f"文件: {metadata.get('file_path', 'N/A')}\n"
+                        source_info += f"檔案: {metadata.get('file_path', 'N/A')}\n"
                     if 'arxiv_id' in metadata:
                         source_info += f"arXiv ID: {metadata.get('arxiv_id', 'N/A')}\n"
                 
@@ -246,7 +246,7 @@ class PromptFormatter:
                 formatted_parts.append(source_info)
                 
             elif format_style == "simple":
-                # 簡單格式：只包含關鍵信息
+                # 簡單格式：只包含關鍵資訊
                 title = metadata.get('title', 'N/A')
                 if document_type == "paper" and 'arxiv_id' in metadata:
                     arxiv_id = metadata.get('arxiv_id', 'N/A')
@@ -295,7 +295,7 @@ class PromptFormatter:
         if self.max_context_length and len(formatted_text) > self.max_context_length:
             # 從後往前截斷，保留格式
             formatted_text = formatted_text[:self.max_context_length]
-            # 確保最後一個來源信息完整
+            # 確保最後一個來源資訊完整
             last_separator = formatted_text.rfind("="*60)
             if last_separator > 0:
                 formatted_text = formatted_text[:last_separator] + "\n（內容已截斷...）"
@@ -326,7 +326,7 @@ class PromptFormatter:
             detected_language = self.detect_language(query)
             system_prompt = self.get_system_prompt(detected_language, document_type)
         elif system_prompt is None:
-            # 如果禁用自動檢測，使用中文作為默認
+            # 如果禁用自動檢測，使用中文作為預設
             system_prompt = self.get_system_prompt("zh", document_type)
         
         # 根據檢測到的語言選擇提示詞格式

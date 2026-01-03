@@ -68,7 +68,7 @@ class VectorRetriever(BaseRetriever):
                             僅在 embeddings=None 時使用
             persist_directory: Chroma 資料庫持久化目錄
             hf_cache_dir: Hugging Face 模型緩存目錄（例如外接硬碟路徑）
-                         如果為 None，則使用環境變數 HF_HOME 或默認位置 ~/.cache/huggingface/
+                         如果為 None，則使用環境變數 HF_HOME 或預設位置 ~/.cache/huggingface/
                          僅在 embeddings=None 時使用
             device: 設備名稱 ('mps', 'cuda', 'cpu')，如果為 None 則自動檢測最佳設備
                    僅在 embeddings=None 時使用

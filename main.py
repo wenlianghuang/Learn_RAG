@@ -365,13 +365,13 @@ def detect_document_type(file_path: Optional[str] = None, results: Optional[List
     自動檢測文檔類型
     
     Args:
-        file_path: 文件路徑（可選）
+        file_path: 檔案路徑（可選）
         results: 檢索結果列表（可選，用於從 metadata 推斷）
         
     Returns:
         文檔類型 ("paper", "cv", "general")
     """
-    # 優先從文件路徑判斷
+    # 優先從檔案路徑判斷
     if file_path:
         file_path_lower = file_path.lower()
         if any(keyword in file_path_lower for keyword in ["cv", "resume", "履歷", "簡歷"]):
@@ -386,7 +386,7 @@ def detect_document_type(file_path: Optional[str] = None, results: Optional[List
             # 如果有 arxiv_id，很可能是論文
             if "arxiv_id" in metadata:
                 return "paper"
-            # 如果有 file_path，檢查文件名
+            # 如果有 file_path，檢查檔案名
             if "file_path" in metadata:
                 file_path_lower = str(metadata.get("file_path", "")).lower()
                 if any(keyword in file_path_lower for keyword in ["cv", "resume", "履歷", "簡歷"]):
@@ -419,14 +419,14 @@ def test_rag_vs_no_rag(
         rag_pipeline: RAG 管線
         formatter: Prompt 格式化器
         query: 測試問題（應該涉及私有文檔的內容）
-        test_file_path: 測試文件路徑（可選，用於顯示文件信息）
+        test_file_path: 測試檔案路徑（可選，用於顯示檔案資訊）
     """
     print("\n" + "="*60)
     print("RAG 效果對比測試")
     print("="*60)
     print(f"\n測試問題: '{query}'")
     if test_file_path:
-        print(f"測試文件: {test_file_path}")
+        print(f"測試檔案: {test_file_path}")
     print("-"*60)
     
     # 檢測查詢語言
@@ -527,7 +527,7 @@ Please answer in English."""
             metadata = result['metadata']
             print(f"  來源: {metadata.get('title', 'N/A')}")
             if 'file_path' in metadata:
-                print(f"  文件: {metadata['file_path']}")
+                print(f"  檔案: {metadata['file_path']}")
             elif 'arxiv_id' in metadata:
                 print(f"  arXiv ID: {metadata['arxiv_id']}")
             print(f"  相關性分數: {result.get('rerank_score', result.get('hybrid_score', 0)):.4f}")

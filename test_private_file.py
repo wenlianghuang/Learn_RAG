@@ -1,8 +1,8 @@
 """
-測試私有文件的 RAG 效果
+測試私有檔案的 RAG 效果
 
 這個腳本演示如何：
-1. 載入私有文件（PDF, DOCX, TXT）
+1. 載入私有檔案（PDF, DOCX, TXT）
 2. 建立 RAG 系統
 3. 對比測試：有 RAG vs 無 RAG 的效果
 """
@@ -24,25 +24,25 @@ from main import test_rag_vs_no_rag
 
 def main():
     print("=" * 60)
-    print("私有文件 RAG 測試")
+    print("私有檔案 RAG 測試")
     print("=" * 60)
     
-    # ========== 步驟 1: 準備私有文件 ==========
-    print("\n[步驟 1] 準備私有文件")
+    # ========== 步驟 1: 準備私有檔案 ==========
+    print("\n[步驟 1] 準備私有檔案")
     print("-" * 60)
     
-    # 提示用戶輸入文件路徑
+    # 提示用戶輸入檔案路徑
     if len(sys.argv) > 1:
         file_path = sys.argv[1]
     else:
-        # 預設示例：可以修改為你的文件路徑
-        file_path = input("\n請輸入文件路徑（PDF, DOCX, 或 TXT）: ").strip()
+        # 預設示例：可以修改為你的檔案路徑
+        file_path = input("\n請輸入檔案路徑（PDF, DOCX, 或 TXT）: ").strip()
         
         if not file_path:
-            print("\n⚠️  未提供文件路徑")
+            print("\n⚠️  未提供檔案路徑")
             print("\n使用方法：")
-            print("  python test_private_file.py <文件路徑>")
-            print("\n或直接運行，然後輸入文件路徑")
+            print("  python test_private_file.py <檔案路徑>")
+            print("\n或直接運行，然後輸入檔案路徑")
             print("\n範例：")
             print("  python test_private_file.py ./documents/my_document.pdf")
             return
@@ -50,18 +50,18 @@ def main():
     file_path = Path(file_path)
     
     if not file_path.exists():
-        print(f"\n❌ 文件不存在: {file_path}")
+        print(f"\n❌ 檔案不存在: {file_path}")
         print("\n請確認：")
-        print("  1. 文件路徑是否正確")
-        print("  2. 文件是否存在")
+        print("  1. 檔案路徑是否正確")
+        print("  2. 檔案是否存在")
         return
     
-    print(f"✓ 找到文件: {file_path}")
-    print(f"  文件類型: {file_path.suffix}")
-    print(f"  文件大小: {file_path.stat().st_size / 1024:.2f} KB")
+    print(f"✓ 找到檔案: {file_path}")
+    print(f"  檔案類型: {file_path.suffix}")
+    print(f"  檔案大小: {file_path.stat().st_size / 1024:.2f} KB")
     
-    # ========== 步驟 2: 處理文件 ==========
-    print("\n[步驟 2] 處理文件並分割成 chunks")
+    # ========== 步驟 2: 處理檔案 ==========
+    print("\n[步驟 2] 處理檔案並分割成 chunks")
     print("-" * 60)
     
     try:
@@ -74,7 +74,7 @@ def main():
             print(f"  標題: {documents[0]['metadata']['title']}")
             print(f"  內容預覽: {documents[0]['content'][:150]}...")
     except Exception as e:
-        print(f"\n❌ 處理文件失敗: {e}")
+        print(f"\n❌ 處理檔案失敗: {e}")
         import traceback
         traceback.print_exc()
         return
