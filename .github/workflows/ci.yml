@@ -37,16 +37,16 @@ jobs:
     
     - name: Verify Python version
       run: |
-        python --version
-        python -c "import sys; assert sys.version_info >= (3, 13), 'Python 3.13+ required'"
+        uv run python --version
+        uv run python -c "import sys; assert sys.version_info >= (3, 13), 'Python 3.13+ required'"
     
     - name: Test imports
       run: |
-        python -c "from src import DocumentProcessor, BM25Retriever, VectorRetriever, HybridSearch; print('✅ Core imports successful')"
+        uv run python -c "from src import DocumentProcessor, BM25Retriever, VectorRetriever, HybridSearch; print('✅ Core imports successful')"
     
     - name: Run basic syntax check
       run: |
-        find src -name "*.py" -exec python -m py_compile {} \; || echo "⚠️ Syntax check completed with warnings"
+        find src -name "*.py" -exec uv run python -m py_compile {} \; || echo "⚠️ Syntax check completed with warnings"
       continue-on-error: true
 
   lint:
@@ -112,7 +112,7 @@ jobs:
     - name: Verify all imports
       run: |
         echo "Testing core module imports..."
-        python -c "
+        uv run python -c "
         from src import (
             DocumentProcessor,
             BM25Retriever,

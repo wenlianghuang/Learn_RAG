@@ -410,7 +410,9 @@ class DocumentProcessor:
         text = re.sub(chinese_punct_pattern, r'\1\2', text)
         
         # 標點符號 + 空格 + 中文
-        punct_chinese_pattern = r'([，。、；：！？""''（）【】《》])\s+([\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff])'
+        # 使用 re.escape 來正確處理標點符號，避免轉義序列警告
+        punct_chars = '，。、；：！？""''（）【】《》'
+        punct_chinese_pattern = f'([{re.escape(punct_chars)}])\\s+([\\u4e00-\\u9fff\\u3400-\\u4dbf\\uf900-\\ufaff])'
         text = re.sub(punct_chinese_pattern, r'\1\2', text)
         
         # 3. 移除數字和中文之間的多餘空格（例如："500  公里" -> "500公里"）
