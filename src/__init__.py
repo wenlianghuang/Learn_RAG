@@ -12,6 +12,7 @@ from .retrievers import (
 )
 from .prompt_formatter import PromptFormatter
 from .llm_integration import OllamaLLM
+from .subquery_rag import SubQueryDecompositionRAG
 
 __all__ = [
     "DocumentProcessor",
@@ -23,5 +24,6 @@ __all__ = [
     "RAGPipeline",
     "PromptFormatter",
     "OllamaLLM",
+    "SubQueryDecompositionRAG",
 ]
 
