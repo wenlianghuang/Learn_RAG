@@ -15,6 +15,8 @@ from .llm_integration import OllamaLLM
 from .subquery_rag import SubQueryDecompositionRAG
 from .hyde_rag import HyDERAG
 from .hybrid_subquery_hyde_rag import HybridSubqueryHyDERAG
+from .step_back_rag import StepBackRAG
+from .triple_hybrid_rag import TripleHybridRAG
 
 __all__ = [
     "DocumentProcessor",
@@ -29,5 +31,7 @@ __all__ = [
     "SubQueryDecompositionRAG",
     "HyDERAG",
     "HybridSubqueryHyDERAG",
+    "StepBackRAG",
+    "TripleHybridRAG",
 ]
 

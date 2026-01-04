@@ -21,6 +21,7 @@ dependencies = [
     "docx2txt>=0.8",
     # 可選：用於語義分塊功能（如果不需要語義分塊，可以移除此行）
     "langchain-experimental>=0.0.50",
+    "wikipedia>=1.4.0",
 ]
 
 
